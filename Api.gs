@@ -1,11 +1,7 @@
 function doGet(e) {
   if (e && e.parameter && e.parameter.api === '1') return handleWebApi_(e.parameter);
-  return HtmlService.createHtmlOutput(
-    '<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">' +
-    '<meta http-equiv="refresh" content="0;url=https://wce-06.github.io/compassion-world-sns-control/">' +
-    '<title>移動します</title></head><body><p>GitHub版の管理画面へ移動します。</p>' +
-    '<p><a href="https://wce-06.github.io/compassion-world-sns-control/">SNS CONTROLを開く</a></p></body></html>'
-  ).setTitle(APP.NAME);
+  return HtmlService.createTemplateFromFile('Index').evaluate()
+    .setTitle(APP.NAME).addMetaTag('viewport', 'width=device-width, initial-scale=1');
 }
 
 function include_(name) { return HtmlService.createHtmlOutputFromFile(name).getContent(); }
