@@ -20,6 +20,8 @@ concurrency:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    env:
+      DEPLOYMENT_ID: AKfycbwKfxQIgiEHbruUR5XXaVx5GToWDOKDORqykYAo9rON-3XaePm06QNajQx5k5vCL7Ga
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -41,3 +43,5 @@ jobs:
           test -f Styles.html
       - name: Push to Apps Script
         run: clasp push --force
+      - name: Update production web app
+        run: clasp deploy --deploymentId "$DEPLOYMENT_ID" --description "GitHub Actions ${GITHUB_SHA}"
