@@ -1,0 +1,43 @@
+name: Deploy Apps Script
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "**/*.gs"
+      - "**/*.html"
+      - "appsscript.json"
+      - ".clasp.json"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: compassion-world-sns-control-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Install clasp
+        run: npm install --global @google/clasp
+      - name: Restore Google authorization
+        env:
+          CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
+        run: |
+          test -n "$CLASPRC_JSON"
+          printf '%s' "$CLASPRC_JSON" > "$HOME/.clasprc.json"
+      - name: Validate Apps Script files
+        run: |
+          test -f appsscript.json
+          test -f Index.html
+          test -f Client.html
+          test -f Styles.html
+      - name: Push to Apps Script
+        run: clasp push --force
