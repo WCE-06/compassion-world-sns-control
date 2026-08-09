@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="ja"><head><base target="_top"><?!= include_('Styles'); ?></head>
+<body>
+  <header><div><p class="eyebrow">COMPASSION WORLD</p><h1>SNS CONTROL</h1></div><span id="mode" class="badge"></span></header>
+  <main>
+    <section id="health" class="health"></section>
+    <section class="composer card"><h2>投稿を追加</h2><form id="postForm">
+      <div class="grid"><label>ブランド<select name="brand" required></select></label><label>投稿種別<select name="type" required></select></label><fieldset><legend>投稿先</legend><div id="channels" class="checks"></div></fieldset><label>予約日時<input name="scheduledAt" type="datetime-local" required></label></div>
+      <label>投稿本文<textarea name="body" rows="5" required placeholder="投稿本文"></textarea></label><label>画像URL<input name="imageUrl" type="url" placeholder="https://...（Instagramは必須）"></label>
+      <div class="formFoot"><span id="ruleHint">内容から承認レベルを自動判定します</span><button type="submit">キューに追加</button></div>
+    </form></section>
+    <nav><button class="tab active" data-view="today">今日の投稿 <b id="todayCount">0</b></button><button class="tab" data-view="pending">承認待ち <b id="pendingCount">0</b></button><button class="tab" data-view="tomorrow">明日の候補 <b id="tomorrowCount">0</b></button><button class="tab" data-view="materials">素材依頼 <b id="materialsCount">0</b></button></nav>
+    <section id="list" class="list"></section><section id="errors" class="errors"></section>
+  </main><div id="toast"></div><?!= include_('Client'); ?>
+</body></html>
