@@ -36,6 +36,36 @@ function setupCompassionWorldInstagram() {
   return {ok:true, username:username};
 }
 
+function runInstagramDryRunTest() {
+  if (!isDryRun_()) throw new Error('安全のためDRY_RUN=trueのときだけ実行できます。');
+  const scheduledAt = new Date(now_().getTime() - 60000);
+  const groupId = uuid_();
+  const row = {
+    '投稿ID': groupId + '-instagram',
+    'ブランド': 'COMPASSION WORLD',
+    '投稿種別': '通常',
+    '投稿本文': '【DRY RUN】Instagram予約投稿フローの接続テストです。実際には投稿されません。',
+    '画像URL': 'https://wce-06.github.io/compassion-world-sns-control/test-image.svg',
+    '投稿先': 'Instagram',
+    '予約日時': scheduledAt,
+    '承認レベル': APP.APPROVAL.AUTO,
+    'ステータス': APP.STATUS.QUEUED,
+    '作成者': Session.getActiveUser().getEmail() || 'system-test',
+    '作成日時': now_(),
+    '更新日時': now_(),
+    '試行回数': 0
+  };
+  row['承認時ハッシュ'] = contentHash_(row);
+  appendObject_(APP.SHEETS.POSTS, row);
+  processQueue();
+  const result = findPost_(row['投稿ID']);
+  if (!result || result['ステータス'] !== APP.STATUS.POSTED) {
+    throw new Error('DRY RUNテストが完了しませんでした。ステータス: ' + (result ? result['ステータス'] : '不明'));
+  }
+  console.log('Instagram DRY RUN成功: 投稿キュー・承認ハッシュ・履歴記録が正常です。');
+  return {ok:true, postId:row['投稿ID'], status:result['ステータス']};
+}
+
 function setupSystem() {
   const ss = ss_();
   createSheet_(ss, APP.SHEETS.POSTS, APP.POST_HEADERS);
