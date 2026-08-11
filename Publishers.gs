@@ -12,7 +12,8 @@ function publishInstagram_(post) {
   const base = 'https://graph.facebook.com/' + (getProperty_('META_GRAPH_VERSION', false) || 'v23.0');
   const created = fetchJson_(base + '/' + encodeURIComponent(userId) + '/media', {method:'post',payload:{image_url:post['画像URL'],caption:post['投稿本文'],access_token:token}});
   const published = fetchJson_(base + '/' + encodeURIComponent(userId) + '/media_publish', {method:'post',payload:{creation_id:created.id,access_token:token}});
-  return {id:published.id, url:'https://www.instagram.com/'};
+  const media = fetchJson_(base + '/' + encodeURIComponent(published.id) + '?fields=id,permalink&access_token=' + encodeURIComponent(token), {method:'get'});
+  return {id:published.id, url:media.permalink || 'https://www.instagram.com/'};
 }
 
 function publishThreads_(post) {

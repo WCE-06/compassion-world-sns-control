@@ -66,6 +66,85 @@ function runInstagramDryRunTest() {
   return {ok:true, postId:row['投稿ID'], status:result['ステータス']};
 }
 
+function publishApprovedInstagramAwarenessPost() {
+  const props = PropertiesService.getScriptProperties();
+  const existingId = props.getProperty('CW_AWARENESS_INSTAGRAM_MEDIA_ID');
+  if (existingId) throw new Error('この告知投稿はすでに公開済みです。InstagramメディアID: ' + existingId);
+
+  const caption = [
+    '【現状、私たちが抱えている課題】',
+    '',
+    '認知度不足！！！！',
+    '',
+    '山梨県北杜市・八ヶ岳南麓を中心に、',
+    'さまざまな施設や活動を展開している私たち。',
+    '',
+    'いい施設も、楽しいイベントも、お得な情報も。',
+    '知ってもらえなければ、存在していないのと同じでは……？',
+    '',
+    'さすがにこのままではいけない。',
+    '',
+    'ということで、COMPASSION WORLDに',
+    'SNS運営チームが立ち上がりました。',
+    '',
+    'これからは、',
+    '',
+    '・各施設のお得な情報',
+    '・イベントやキャンペーンのお知らせ',
+    '・普段は見えない舞台裏',
+    '・たまに起きる、社内のちょっとした事件',
+    '',
+    'などを、これまで以上に発信していきます。',
+    '',
+    'まずは「こんなところがあるんだ」と',
+    '知ってもらうところから。',
+    '',
+    '気になる施設や、知りたいことがあれば',
+    'ぜひコメントで教えてください！',
+    '',
+    '今後の投稿を見逃さないよう、',
+    'フォローしてお待ちください。',
+    '',
+    '#COMPASSIONWORLD',
+    '#コンパッションワールド',
+    '#北杜市',
+    '#イベント情報',
+    '#SNS運営チーム'
+  ].join('\n');
+  const post = {
+    '投稿ID': 'approved-awareness-instagram-20260811',
+    'ブランド': 'COMPASSION WORLD',
+    '投稿種別': '通常',
+    '投稿本文': caption,
+    '画像URL': 'https://wce-06.github.io/compassion-world-sns-control/instagram-awareness-post.png',
+    '投稿先': 'Instagram',
+    '予約日時': now_(),
+    '承認レベル': APP.APPROVAL.AUTO,
+    'ステータス': APP.STATUS.POSTING,
+    '承認者': Session.getActiveUser().getEmail() || 'user-approved-in-codex',
+    '承認日時': now_(),
+    '作成者': Session.getActiveUser().getEmail() || 'system',
+    '作成日時': now_(),
+    '更新日時': now_(),
+    '試行回数': 0
+  };
+  validatePostInput_({brand:post['ブランド'], type:post['投稿種別'], body:caption, imageUrl:post['画像URL'], channel:'Instagram', scheduledAt:post['予約日時']});
+  appendObject_(APP.SHEETS.POSTS, post);
+  const stored = findPost_(post['投稿ID']);
+  try {
+    const result = publishInstagram_(stored);
+    updatePost_(stored._row, {'ステータス':APP.STATUS.POSTED,'投稿結果URL':result.url,'更新日時':now_(),'最終エラー':''});
+    appendObject_(APP.SHEETS.HISTORY, {'履歴ID':uuid_(),'投稿ID':post['投稿ID'],'ブランド':post['ブランド'],'投稿先':'Instagram','実行日時':now_(),'結果':'成功','外部ID':result.id,'投稿URL':result.url,'レスポンス要約':JSON.stringify(result)});
+    props.setProperties({CW_AWARENESS_INSTAGRAM_MEDIA_ID:String(result.id),CW_AWARENESS_INSTAGRAM_URL:result.url || ''});
+    console.log('Instagram実投稿成功: ' + result.url);
+    return {ok:true, id:result.id, url:result.url};
+  } catch (err) {
+    updatePost_(stored._row, {'ステータス':APP.STATUS.FAILED,'試行回数':1,'最終エラー':String(err.message || err),'更新日時':now_()});
+    appendObject_(APP.SHEETS.ERRORS, {'エラーID':uuid_(),'投稿ID':post['投稿ID'],'発生日時':now_(),'投稿先':'Instagram','処理':'approved-live-publish','HTTPコード':err.httpCode || '','内容':String(err.stack || err).slice(0,4000),'再試行可':false});
+    throw err;
+  }
+}
+
 function setupSystem() {
   const ss = ss_();
   createSheet_(ss, APP.SHEETS.POSTS, APP.POST_HEADERS);
