@@ -7,15 +7,24 @@ function onOpen() {
     .addItem('トリガーを再作成', 'installTriggers')
     .addItem('導入診断', 'showSystemHealth')
     .addItem('Instagram接続を設定', 'setupCompassionWorldInstagram')
+    .addItem('おもひで商店Instagramを設定', 'setupOmoideInstagram')
     .addItem('セルフテスト', 'showSelfTest')
     .addItem('DRY RUNデモを追加', 'seedDemoData')
     .addToUi();
 }
 
 function setupCompassionWorldInstagram() {
+  return setupMetaInstagramBrand_('CW', 'wce_compassion_world');
+}
+
+function setupOmoideInstagram() {
+  return setupMetaInstagramBrand_('OMO', 'wce_omoide.store');
+}
+
+function setupMetaInstagramBrand_(prefix, expectedUsername) {
   const props = PropertiesService.getScriptProperties();
-  const token = props.getProperty('CW_META_ACCESS_TOKEN');
-  if (!token) throw new Error('スクリプトプロパティ「CW_META_ACCESS_TOKEN」が未設定です。');
+  const token = props.getProperty(prefix + '_META_ACCESS_TOKEN') || props.getProperty('CW_META_ACCESS_TOKEN') || props.getProperty('META_ACCESS_TOKEN');
+  if (!token) throw new Error('Metaアクセストークンが未設定です。');
 
   const version = props.getProperty('META_GRAPH_VERSION') || 'v26.0';
   const fields = 'id,name,instagram_business_account{id,username}';
@@ -23,14 +32,16 @@ function setupCompassionWorldInstagram() {
     'https://graph.facebook.com/' + version + '/me/accounts?fields=' + encodeURIComponent(fields) + '&access_token=' + encodeURIComponent(token),
     {method:'get'}
   );
-  const page = (data.data || []).find(item => item.instagram_business_account && item.instagram_business_account.id);
+  const page = (data.data || []).find(item => {
+    const account = item.instagram_business_account;
+    return account && account.id && (!expectedUsername || account.username === expectedUsername);
+  });
   if (!page) throw new Error('連携済みのInstagramプロアカウントを取得できませんでした。Meta側のページ連携と権限を確認してください。');
 
-  props.setProperties({
-    CW_META_IG_USER_ID: String(page.instagram_business_account.id),
-    CW_META_PAGE_ID: String(page.id),
-    META_GRAPH_VERSION: version
-  });
+  const values = {META_GRAPH_VERSION: version};
+  values[prefix + '_META_IG_USER_ID'] = String(page.instagram_business_account.id);
+  values[prefix + '_META_PAGE_ID'] = String(page.id);
+  props.setProperties(values);
   const username = page.instagram_business_account.username || '取得済み';
   console.log('Instagram接続完了: @' + username + '（DRY RUNは引き続き有効）');
   return {ok:true, username:username};

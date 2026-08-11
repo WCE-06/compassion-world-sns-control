@@ -7,7 +7,7 @@ function getSystemHealth_() {
     const prefix = brand[0];
     const checks = [
       {channel:'X', ok:!!props[prefix + '_X_ACCESS_TOKEN']},
-      {channel:'Instagram', ok:!!props[prefix + '_META_IG_USER_ID'] && !!props[prefix + '_META_ACCESS_TOKEN']},
+      {channel:'Instagram', ok:!!props[prefix + '_META_IG_USER_ID'] && !!(props[prefix + '_META_ACCESS_TOKEN'] || props.CW_META_ACCESS_TOKEN || props.META_ACCESS_TOKEN)},
       {channel:'Threads', ok:!!props[prefix + '_THREADS_USER_ID'] && !!props[prefix + '_THREADS_ACCESS_TOKEN']}
     ];
     checks.forEach(c => { if (c.ok) configured++; connections.push({brand:brand[1],channel:c.channel,configured:c.ok}); });

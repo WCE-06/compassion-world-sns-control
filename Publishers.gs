@@ -30,6 +30,11 @@ function publishThreads_(post) {
 function getBrandSecret_(brand, suffix) {
   const brandRow = BRAND_ROWS.find(r => r[1] === brand);
   if (!brandRow) throw new Error('ブランド設定がありません。');
+  const brandValue = getProperty_(brandRow[0] + '_' + suffix, false);
+  if (brandValue) return brandValue;
+  if (suffix === 'META_ACCESS_TOKEN') {
+    return getProperty_('CW_META_ACCESS_TOKEN', false) || getProperty_('META_ACCESS_TOKEN', true);
+  }
   return getProperty_(brandRow[0] + '_' + suffix, true);
 }
 

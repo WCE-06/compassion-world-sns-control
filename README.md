@@ -52,7 +52,7 @@ HTML/CSS/JavaScriptはGitHubを正本として管理し、GitHub Actionsから�
 ブランド接頭辞: `CW`, `OMO`, `AOZ`, `FEB`, `ART`, `KAZU`
 
 - X: `<接頭辞>_X_ACCESS_TOKEN`
-- Instagram: `<接頭辞>_META_IG_USER_ID`, `<接頭辞>_META_ACCESS_TOKEN`
+- Instagram: `<接頭辞>_META_IG_USER_ID`。同じMetaシステムユーザーで管理するブランドは `CW_META_ACCESS_TOKEN` を共有可能（ブランド別トークンも指定可能）
 - Threads: `<接頭辞>_THREADS_USER_ID`, `<接頭辞>_THREADS_ACCESS_TOKEN`
 - 任意: `META_GRAPH_VERSION`（未指定は `v23.0`）、`THREADS_GRAPH_VERSION`（未指定は `v1.0`）
 - 必須安全設定: `DRY_RUN=true|false`
@@ -82,4 +82,3 @@ HTML/CSS/JavaScriptはGitHubを正本として管理し、GitHub Actionsから�
 - X従量課金: https://docs.x.com/x-api/getting-started/pricing
 - Instagram Content Publishing: https://developers.facebook.com/docs/instagram-platform/content-publishing/
 - Threads Publishing: https://developers.facebook.com/docs/threads/posts/
-
