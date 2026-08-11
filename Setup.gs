@@ -6,9 +6,34 @@ function onOpen() {
     .addItem('投稿キューを実行', 'processQueue')
     .addItem('トリガーを再作成', 'installTriggers')
     .addItem('導入診断', 'showSystemHealth')
+    .addItem('Instagram接続を設定', 'setupCompassionWorldInstagram')
     .addItem('セルフテスト', 'showSelfTest')
     .addItem('DRY RUNデモを追加', 'seedDemoData')
     .addToUi();
+}
+
+function setupCompassionWorldInstagram() {
+  const props = PropertiesService.getScriptProperties();
+  const token = props.getProperty('CW_META_ACCESS_TOKEN');
+  if (!token) throw new Error('スクリプトプロパティ「CW_META_ACCESS_TOKEN」が未設定です。');
+
+  const version = props.getProperty('META_GRAPH_VERSION') || 'v26.0';
+  const fields = 'id,name,instagram_business_account{id,username}';
+  const data = fetchJson_(
+    'https://graph.facebook.com/' + version + '/me/accounts?fields=' + encodeURIComponent(fields) + '&access_token=' + encodeURIComponent(token),
+    {method:'get'}
+  );
+  const page = (data.data || []).find(item => item.instagram_business_account && item.instagram_business_account.id);
+  if (!page) throw new Error('連携済みのInstagramプロアカウントを取得できませんでした。Meta側のページ連携と権限を確認してください。');
+
+  props.setProperties({
+    CW_META_IG_USER_ID: String(page.instagram_business_account.id),
+    CW_META_PAGE_ID: String(page.id),
+    META_GRAPH_VERSION: version
+  });
+  const username = page.instagram_business_account.username || '取得済み';
+  console.log('Instagram接続完了: @' + username + '（DRY RUNは引き続き有効）');
+  return {ok:true, username:username};
 }
 
 function setupSystem() {
