@@ -10,6 +10,7 @@ function onOpen() {
     .addItem('おもひで商店Instagramを設定', 'setupOmoideInstagram')
     .addItem('Aozora Kitchen Instagramを設定', 'setupAozoraInstagram')
     .addItem('FEBBRAIO Instagramを設定', 'setupFebbraioInstagram')
+    .addItem('アートリエ Instagramを設定', 'setupArtlierInstagram')
     .addItem('セルフテスト', 'showSelfTest')
     .addItem('DRY RUNデモを追加', 'seedDemoData')
     .addToUi();
@@ -29,6 +30,10 @@ function setupAozoraInstagram() {
 
 function setupFebbraioInstagram() {
   return setupMetaInstagramBrand_('FEB', 'wce_febbraio');
+}
+
+function setupArtlierInstagram() {
+  return setupMetaInstagramBrand_('ART', 'wce_artlier');
 }
 
 function setupMetaInstagramBrand_(prefix, expectedUsername) {
