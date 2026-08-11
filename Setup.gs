@@ -9,6 +9,7 @@ function onOpen() {
     .addItem('Instagram接続を設定', 'setupCompassionWorldInstagram')
     .addItem('おもひで商店Instagramを設定', 'setupOmoideInstagram')
     .addItem('Aozora Kitchen Instagramを設定', 'setupAozoraInstagram')
+    .addItem('FEBBRAIO Instagramを設定', 'setupFebbraioInstagram')
     .addItem('セルフテスト', 'showSelfTest')
     .addItem('DRY RUNデモを追加', 'seedDemoData')
     .addToUi();
@@ -24,6 +25,10 @@ function setupOmoideInstagram() {
 
 function setupAozoraInstagram() {
   return setupMetaInstagramBrand_('AOZ', 'wce_aozora.kitchen');
+}
+
+function setupFebbraioInstagram() {
+  return setupMetaInstagramBrand_('FEB', 'wce_febbraio');
 }
 
 function setupMetaInstagramBrand_(prefix, expectedUsername) {
