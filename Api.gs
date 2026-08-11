@@ -50,6 +50,10 @@ function validatePostInput_(p) {
   if (!p.body || !p.body.trim()) throw new Error('投稿本文は必須です。');
   if (!p.scheduledAt || isNaN(new Date(p.scheduledAt).getTime())) throw new Error('予約日時が不正です。');
   if (channels.includes('Instagram') && !p.imageUrl) throw new Error('Instagram投稿には公開アクセス可能な画像URLが必要です。');
+  if (channels.includes('Instagram')) {
+    const hashtags = p.body.match(/#[^\s#]+/g) || [];
+    if (hashtags.length > 5) throw new Error('Instagramのハッシュタグは最大5個です。現在: ' + hashtags.length + '個');
+  }
 }
 
 function serializePost_(p) {
