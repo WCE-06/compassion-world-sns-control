@@ -1,6 +1,6 @@
 const APP = Object.freeze({
   NAME: 'COMPASSION WORLD SNS CONTROL',
-  VERSION: '0.3.0',
+  VERSION: '0.4.0',
   TZ: 'Asia/Tokyo',
   SHEETS: {
     POSTS: '投稿管理', BRANDS: 'ブランド', HISTORY: '投稿履歴',
