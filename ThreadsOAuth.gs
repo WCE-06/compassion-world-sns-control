@@ -96,3 +96,43 @@ function threadsCallbackHtml_(ok, message) {
   const safe = String(message).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   return HtmlService.createHtmlOutput('<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>' + title + '</title></head><body style="font-family:-apple-system,BlinkMacSystemFont,Noto Sans JP,sans-serif;background:#f7f4ee;color:#17223b;margin:0;padding:28px"><main style="max-width:560px;margin:40px auto;background:#fff;border-radius:18px;padding:28px;border:1px solid #e7e1d7"><h1 style="color:' + color + ';font-size:24px">' + title + '</h1><p style="line-height:1.8">' + safe + '</p><p style="color:#6b7280">この画面を閉じて、SNS CONTROLの「状態を更新」を押してください。</p></main></body></html>').setTitle(title);
 }
+
+function handleThreadsMetaCallback_(p) {
+  try {
+    const payload = verifyThreadsSignedRequest_(String(p.signed_request || ''));
+    const userId = String(payload.user_id || '');
+    const confirmation = Utilities.getUuid().replace(/-/g, '');
+    if (userId) clearThreadsConnectionByUserId_(userId);
+    if (p.meta_callback === 'threads_delete') {
+      const statusUrl = getThreadsRedirectUri_() + '?deletion_confirmation=' + encodeURIComponent(confirmation);
+      return ContentService.createTextOutput(JSON.stringify({url:statusUrl,confirmation_code:confirmation}))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    return ContentService.createTextOutput(JSON.stringify({ok:true})).setMimeType(ContentService.MimeType.JSON);
+  } catch (err) {
+    return ContentService.createTextOutput(JSON.stringify({ok:false,error:String(err && err.message ? err.message : err)}))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+function verifyThreadsSignedRequest_(signedRequest) {
+  const parts = signedRequest.split('.');
+  if (parts.length !== 2) throw new Error('signed_requestがありません。');
+  const expected = Utilities.base64EncodeWebSafe(
+    Utilities.computeHmacSha256Signature(parts[1], getProperty_('THREADS_APP_SECRET', true))
+  ).replace(/=+$/, '');
+  if (expected !== parts[0]) throw new Error('signed_requestを検証できませんでした。');
+  return JSON.parse(Utilities.newBlob(Utilities.base64DecodeWebSafe(parts[1])).getDataAsString());
+}
+
+function clearThreadsConnectionByUserId_(userId) {
+  const props = PropertiesService.getScriptProperties();
+  const current = props.getProperties();
+  THREADS_BRANDS.forEach(item => {
+    if (String(current[item.prefix + '_THREADS_USER_ID'] || '') !== userId) return;
+    [
+      'THREADS_USER_ID','THREADS_ACCESS_TOKEN','THREADS_USERNAME',
+      'THREADS_CONNECTED_AT','THREADS_TOKEN_EXPIRES_AT'
+    ].forEach(suffix => props.deleteProperty(item.prefix + '_' + suffix));
+  });
+}

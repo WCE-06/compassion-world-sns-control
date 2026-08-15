@@ -5,6 +5,12 @@ function doGet(e) {
     .setTitle(APP.NAME).addMetaTag('viewport', 'width=device-width, initial-scale=1');
 }
 
+function doPost(e) {
+  if (e && e.parameter && e.parameter.meta_callback) return handleThreadsMetaCallback_(e.parameter);
+  return ContentService.createTextOutput(JSON.stringify({ok:false,error:'unsupported'}))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
 function include_(name) { return HtmlService.createHtmlOutputFromFile(name).getContent(); }
 
 function getDashboardData() {
