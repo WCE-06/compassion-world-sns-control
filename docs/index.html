@@ -8,11 +8,11 @@
     <section id="health" class="health"></section>
     <section class="card threadsConnect">
       <div class="sectionHead"><div><p class="eyebrow dark">SMARTPHONE OAUTH</p><h2>Threadsをスマホで接続</h2></div><button id="refreshThreads" class="subtle" type="button">状態を更新</button></div>
-      <p class="help">Threadsアプリで対象アカウントに切り替え、QRコードをスマホで読み取って許可します。認証情報はGASにだけ保存されます。</p>
+      <p class="help">Threadsアプリで対象アカウントに切り替えたあと、スマホのブラウザから認証します。認証情報はGASにだけ保存されます。</p>
       <div id="threadsAccounts" class="connectionGrid"></div>
       <div id="threadsQrPanel" class="qrPanel" hidden>
         <div id="threadsQr" class="qr"></div>
-        <div><h3 id="threadsQrTitle"></h3><p>スマホでQRコードを読み取るか、下のボタンで認証画面を開いてください。有効時間は10分です。</p><a id="threadsAuthLink" class="buttonLink" href="#" target="_blank" rel="noopener">スマホで認証を開く</a><button id="regenerateThreadsQr" class="subtle" type="button">QRコードを再発行</button><button id="closeThreadsQr" class="subtle" type="button">閉じる</button></div>
+        <div><h3 id="threadsQrTitle"></h3><p><b>スマホでQRを読むとThreadsのホームだけが開く場合：</b><br>「認証URLをコピー」を押し、SafariまたはChromeのアドレス欄へ貼り付けて開いてください。有効時間は10分です。</p><button id="copyThreadsAuthUrl" type="button">認証URLをコピー</button><a id="threadsAuthLink" class="buttonLink" href="#" target="_blank" rel="noopener">この端末のブラウザで開く</a><button id="regenerateThreadsQr" class="subtle" type="button">QRコードを再発行</button><button id="closeThreadsQr" class="subtle" type="button">閉じる</button></div>
       </div>
     </section>
     <section class="composer card"><h2>投稿を追加</h2><form id="postForm">
