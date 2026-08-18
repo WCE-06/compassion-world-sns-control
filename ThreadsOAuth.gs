@@ -18,7 +18,7 @@ function startThreadsOAuth_(payload) {
     client_id:getProperty_('THREADS_APP_ID', true), redirect_uri:redirectUri,
     scope:'threads_basic,threads_content_publish', response_type:'code', state:state
   };
-  const authUrl = 'https://threads.net/oauth/authorize?' + Object.keys(query)
+  const authUrl = 'https://www.threads.com/oauth/authorize?' + Object.keys(query)
     .map(key => encodeURIComponent(key) + '=' + encodeURIComponent(query[key])).join('&');
   return {brand:target.brand, username:'@' + target.username, authUrl:authUrl, expiresIn:600};
 }
@@ -37,7 +37,7 @@ function handleThreadsOAuthCallback_(p) {
     const shortToken = exchangeThreadsCode_(String(p.code));
     const longToken = exchangeThreadsLongToken_(shortToken.access_token);
     const accessToken = longToken.access_token || shortToken.access_token;
-    const profile = fetchJson_('https://graph.threads.net/v1.0/me?fields=id,username&access_token=' + encodeURIComponent(accessToken), {method:'get'});
+    const profile = fetchJson_('https://graph.threads.com/v1.0/me?fields=id,username&access_token=' + encodeURIComponent(accessToken), {method:'get'});
     if (!profile.id || !profile.username) throw new Error('Threadsプロフィールを取得できませんでした。');
     if (String(profile.username).toLowerCase() !== target.username.toLowerCase()) {
       throw new Error('選択されたアカウントは @' + profile.username + ' です。@' + target.username + ' に切り替えてやり直してください。');
@@ -57,14 +57,14 @@ function handleThreadsOAuthCallback_(p) {
 }
 
 function exchangeThreadsCode_(code) {
-  return fetchJson_('https://graph.threads.net/oauth/access_token', {method:'post',payload:{
+  return fetchJson_('https://graph.threads.com/oauth/access_token', {method:'post',payload:{
     client_id:getProperty_('THREADS_APP_ID', true), client_secret:getProperty_('THREADS_APP_SECRET', true),
     grant_type:'authorization_code', redirect_uri:getThreadsRedirectUri_(), code:code
   }});
 }
 
 function exchangeThreadsLongToken_(shortToken) {
-  return fetchJson_('https://graph.threads.net/access_token?grant_type=th_exchange_token&client_secret=' +
+  return fetchJson_('https://graph.threads.com/access_token?grant_type=th_exchange_token&client_secret=' +
     encodeURIComponent(getProperty_('THREADS_APP_SECRET', true)) + '&access_token=' + encodeURIComponent(shortToken), {method:'get'});
 }
 
