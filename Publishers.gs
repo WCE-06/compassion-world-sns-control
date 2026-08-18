@@ -19,7 +19,7 @@ function publishInstagram_(post) {
 function publishThreads_(post) {
   const userId = getBrandSecret_(post['ブランド'], 'THREADS_USER_ID');
   const token = getBrandSecret_(post['ブランド'], 'THREADS_ACCESS_TOKEN');
-  const base = 'https://graph.threads.net/' + (getProperty_('THREADS_GRAPH_VERSION', false) || 'v1.0');
+  const base = 'https://graph.threads.com/' + (getProperty_('THREADS_GRAPH_VERSION', false) || 'v1.0');
   const payload = {media_type:post['画像URL']?'IMAGE':'TEXT',text:post['投稿本文'],access_token:token};
   if (post['画像URL']) payload.image_url = post['画像URL'];
   const created = fetchJson_(base + '/' + encodeURIComponent(userId) + '/threads', {method:'post',payload:payload});
