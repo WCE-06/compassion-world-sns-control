@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Threads認証 | COMPASSION WORLD SNS CONTROL</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header><div><p class="eyebrow">COMPASSION WORLD</p><h1>Threads接続</h1></div></header>
+  <main>
+    <section class="card" style="max-width:620px;margin:32px auto">
+      <h2>ブラウザでThreadsを認証</h2>
+      <p>Threadsアプリで接続したいアカウントに切り替えてから、下のボタンを押してください。</p>
+      <form id="oauthForm" method="get" action="https://www.threads.com/oauth/authorize">
+        <button id="startOAuth" type="submit">認証画面へ進む</button>
+      </form>
+      <p id="error" class="errors" hidden></p>
+      <p class="help">このページを経由することで、QRコードからThreadsアプリのホームへ直接移動する動作を避けます。</p>
+    </section>
+  </main>
+  <script>
+    const form=document.getElementById('oauthForm');
+    const error=document.getElementById('error');
+    try {
+      const auth=new URL(new URLSearchParams(location.search).get('auth'));
+      if(auth.hostname!=='www.threads.com'||auth.pathname!=='/oauth/authorize')throw new Error('認証URLが正しくありません。');
+      auth.searchParams.forEach((value,key)=>{
+        const input=document.createElement('input');
+        input.type='hidden';input.name=key;input.value=value;form.appendChild(input);
+      });
+    } catch(e) {
+      form.hidden=true;error.hidden=false;error.textContent='認証情報を確認できません。SNS CONTROLからQRコードを再発行してください。';
+    }
+  </script>
+</body>
+</html>
