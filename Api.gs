@@ -1,7 +1,14 @@
 function doGet(e) {
+  if (e && e.parameter && (e.parameter.code || e.parameter.error) && e.parameter.state) return handleThreadsOAuthCallback_(e.parameter);
   if (e && e.parameter && e.parameter.api === '1') return handleWebApi_(e.parameter);
   return HtmlService.createTemplateFromFile('Index').evaluate()
     .setTitle(APP.NAME).addMetaTag('viewport', 'width=device-width, initial-scale=1');
+}
+
+function doPost(e) {
+  if (e && e.parameter && e.parameter.meta_callback) return handleThreadsMetaCallback_(e.parameter);
+  return ContentService.createTextOutput(JSON.stringify({ok:false,error:'unsupported'}))
+    .setMimeType(ContentService.MimeType.JSON);
 }
 
 function include_(name) { return HtmlService.createHtmlOutputFromFile(name).getContent(); }
@@ -12,7 +19,7 @@ function getDashboardData() {
   const posts = readObjects_(APP.SHEETS.POSTS).map(serializePost_);
   const scheduledDay = p => p.scheduledAt ? p.scheduledAt.slice(0, 10) : '';
   return {
-    app: APP.NAME, version: APP.VERSION, dryRun: isDryRun_(), health: getSystemHealth_(),
+    app: APP.NAME, version: APP.VERSION, dryRun: isDryRun_(), health: getSystemHealth_(), threadsConnections:getThreadsConnectionStatus_(),
     today: posts.filter(p => scheduledDay(p) === today),
     pending: posts.filter(p => p.status === APP.STATUS.PENDING),
     tomorrow: posts.filter(p => scheduledDay(p) === tomorrow),

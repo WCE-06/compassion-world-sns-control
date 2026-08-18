@@ -117,3 +117,15 @@ App-only Bearer Tokenでは投稿できません。
 - Instagramコンテナ処理完了待ち
 - X画像アップロード
 - 接続テストボタンと失効通知
+# Threads（スマホOAuth）
+
+ThreadsはMeta Business Suiteへのアセット追加を使わず、公式Threads APIのOAuthで接続できます。
+
+1. MetaアプリにThreads APIユースケースを追加する。
+2. Threads API設定の「リダイレクトコールバックURL」にGAS Web Appの `/exec` URLを登録する。
+3. GASのスクリプトプロパティへ `THREADS_APP_ID`、`THREADS_APP_SECRET`、`THREADS_REDIRECT_URI` を設定する。
+4. GASを新しいバージョンとしてデプロイする。
+5. GitHub Pagesの「Threadsをスマホで接続」からブランドを選び、QRコードを読み取る。
+6. Threadsアプリで同じアカウントへ切り替えてから、スマホの認証画面で許可する。
+
+取得したアクセストークン、ユーザーID、接続日時、有効期限はScript Propertiesだけに保存されます。GitHub Pagesやスプレッドシートには保存されません。

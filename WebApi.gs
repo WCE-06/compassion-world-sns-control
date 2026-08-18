@@ -10,6 +10,7 @@ function handleWebApi_(p) {
       case 'create': result = {ok:true, data:createPost(payload)}; break;
       case 'approve': result = {ok:true, data:approvePost(payload.id)}; break;
       case 'reject': result = {ok:true, data:rejectPost(payload.id, payload.reason || '')}; break;
+      case 'threadsAuthStart': result = {ok:true, data:startThreadsOAuth_(payload)}; break;
       default: throw new Error('操作が不正です。');
     }
   } catch (err) {
