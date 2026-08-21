@@ -1,4 +1,5 @@
 function publishX_(post) {
+  assertFinalApproval_(post);
   const token = getBrandSecret_(post['ブランド'], 'X_ACCESS_TOKEN');
   const payload = {text: post['投稿本文']};
   if (post['画像URL']) throw new Error('MVPのX画像アップロードは未対応です。本文のみで投稿するか拡張してください。');
@@ -7,6 +8,7 @@ function publishX_(post) {
 }
 
 function publishInstagram_(post) {
+  assertFinalApproval_(post);
   const userId = getBrandSecret_(post['ブランド'], 'META_IG_USER_ID');
   const token = getBrandSecret_(post['ブランド'], 'META_ACCESS_TOKEN');
   const base = 'https://graph.facebook.com/' + (getProperty_('META_GRAPH_VERSION', false) || 'v23.0');
@@ -17,6 +19,7 @@ function publishInstagram_(post) {
 }
 
 function publishThreads_(post) {
+  assertFinalApproval_(post);
   const userId = getBrandSecret_(post['ブランド'], 'THREADS_USER_ID');
   const token = getBrandSecret_(post['ブランド'], 'THREADS_ACCESS_TOKEN');
   const base = 'https://graph.threads.com/' + (getProperty_('THREADS_GRAPH_VERSION', false) || 'v1.0');

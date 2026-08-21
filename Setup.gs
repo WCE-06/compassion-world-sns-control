@@ -75,20 +75,18 @@ function runInstagramDryRunTest() {
     '投稿先': 'Instagram',
     '予約日時': scheduledAt,
     '承認レベル': APP.APPROVAL.AUTO,
-    'ステータス': APP.STATUS.QUEUED,
+    'ステータス': APP.STATUS.PENDING,
     '作成者': Session.getActiveUser().getEmail() || 'system-test',
     '作成日時': now_(),
     '更新日時': now_(),
     '試行回数': 0
   };
-  row['承認時ハッシュ'] = contentHash_(row);
   appendObject_(APP.SHEETS.POSTS, row);
-  processQueue();
   const result = findPost_(row['投稿ID']);
-  if (!result || result['ステータス'] !== APP.STATUS.POSTED) {
-    throw new Error('DRY RUNテストが完了しませんでした。ステータス: ' + (result ? result['ステータス'] : '不明'));
+  if (!result || result['ステータス'] !== APP.STATUS.PENDING || result['承認時ハッシュ']) {
+    throw new Error('DRY RUNテストで承認待ちになりませんでした。ステータス: ' + (result ? result['ステータス'] : '不明'));
   }
-  console.log('Instagram DRY RUN成功: 投稿キュー・承認ハッシュ・履歴記録が正常です。');
+  console.log('Instagram DRY RUN成功: 管理人の承認なしでは投稿されません。Web Appで承認後にキューを実行してください。');
   return {ok:true, postId:row['投稿ID'], status:result['ステータス']};
 }
 
@@ -295,6 +293,6 @@ function handlePostEdit(e) {
     const post = posts.find(p => p._row === row);
     if (!post || [APP.STATUS.POSTED, APP.STATUS.CANCELLED].includes(post['ステータス'])) continue;
     const level = decideApprovalLevel_({brand:post['ブランド'], type:post['投稿種別']});
-    updatePost_(row, {'承認レベル':level,'ステータス':initialStatus_(level),'承認者':'','承認日時':'','承認時ハッシュ':level === APP.APPROVAL.AUTO ? contentHash_(post) : '','更新日時':now_(),'最終エラー':level === APP.APPROVAL.AUTO ? '' : '内容変更のため再承認が必要です。'});
+    updatePost_(row, {'承認レベル':level,'ステータス':initialStatus_(level),'承認者':'','承認日時':'','承認時ハッシュ':'','更新日時':now_(),'最終エラー':'内容変更のため再承認が必要です。'});
   }
 }

@@ -43,7 +43,6 @@ function createPost(input) {
       '作成者': Session.getActiveUser().getEmail() || 'unknown', '作成日時': now,
       '更新日時': now, '試行回数': 0
     };
-    if (level === APP.APPROVAL.AUTO) row['承認時ハッシュ'] = contentHash_(row);
     appendObject_(APP.SHEETS.POSTS, row);
   });
   return {ok: true, count: channels.length, approvalLevel: level, status: initialStatus_(level)};

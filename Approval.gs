@@ -5,7 +5,8 @@ function decideApprovalLevel_(post) {
 }
 
 function initialStatus_(level) {
-  return level === APP.APPROVAL.AUTO ? APP.STATUS.QUEUED : APP.STATUS.PENDING;
+  // 承認レベルはリスク分類として残すが、すべての投稿を最終確認へ送る。
+  return APP.STATUS.PENDING;
 }
 
 function approvePost(postId) {
@@ -27,8 +28,21 @@ function rejectPost(postId, reason) {
 
 function requireApprover_() {
   const email = Session.getActiveUser().getEmail();
-  const allowed = getProperty_('APPROVER_EMAILS', false).split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+  const allowed = configuredApprovers_();
+  if (!allowed.length) throw new Error('管理人のメールアドレスが未設定です。Script PropertiesのAPPROVER_EMAILSを設定してください。');
   if (!email) throw new Error('承認者のGoogleアカウントを確認できません。Web Appのアクセス設定を確認してください。');
-  if (allowed.length && !allowed.includes(email.toLowerCase())) throw new Error('このアカウントには承認権限がありません。');
+  if (!allowed.includes(email.toLowerCase())) throw new Error('このアカウントには承認権限がありません。');
   return email;
+}
+
+function assertFinalApproval_(post) {
+  const allowed = configuredApprovers_();
+  const approver = String(post['承認者'] || '').trim().toLowerCase();
+  if (!allowed.length || !approver || !allowed.includes(approver)) {
+    throw new Error('管理人の最終承認が確認できないため投稿を停止しました。');
+  }
+  if (!post['承認日時']) throw new Error('承認日時がないため投稿を停止しました。');
+  if (!post['承認時ハッシュ'] || post['承認時ハッシュ'] !== contentHash_(post)) {
+    throw new Error('承認後に内容が変更されたため再承認が必要です。');
+  }
 }

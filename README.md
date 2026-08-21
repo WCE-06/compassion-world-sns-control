@@ -1,4 +1,4 @@
-# COMPASSION WORLD SNS CONTROL — MVP v0.3
+# COMPASSION WORLD SNS CONTROL — MVP v0.5
 
 Googleスプレッドシートを台帳、Google Apps Script Web Appを管理画面として使うSNS予約投稿システムです。
 
@@ -7,7 +7,7 @@ HTML/CSS/JavaScriptはGitHubを正本として管理し、GitHub Actionsから�
 ## MVPでできること
 
 - 6ブランド、Instagram / Threads / Xの投稿予定を一元管理
-- 通常投稿=L1自動、イベント・料金改定・緊急告知=L2要確認、Kazu本人名義・攻めた投稿・Kazu個人=L3必須承認
+- すべての投稿で管理人の最終承認が必須。L1/L2/L3は自動投稿の可否ではなく注意度の分類
 - 今日の投稿、承認待ち、明日の候補、素材依頼をWeb Appで表示
 - 5分ごとの予約投稿キュー、重複実行ロック、最大3回の再試行
 - 投稿履歴とエラー記録
@@ -33,7 +33,7 @@ HTML/CSS/JavaScriptはGitHubを正本として管理し、GitHub Actionsから�
 1. `setupSystem` を実行。
 2. 「SNS CONTROL」→「セルフテスト」を実行。
 3. 「SNS CONTROL」→「DRY RUNデモを追加」を実行。
-4. Web Appで通常投稿が「予約済み」、料金改定とKazu投稿が「承認待ち」になることを確認。
+4. Web Appですべての投稿が「承認待ち」になることを確認。
 5. 承認後、予約時刻を過ぎると「投稿履歴」にDRY_RUN結果が入ることを確認。
 6. 承認後の本文を変更し、承認がリセットされることを確認。
 
@@ -56,7 +56,7 @@ HTML/CSS/JavaScriptはGitHubを正本として管理し、GitHub Actionsから�
 - Threads: `<接頭辞>_THREADS_USER_ID`, `<接頭辞>_THREADS_ACCESS_TOKEN`
 - 任意: `META_GRAPH_VERSION`（未指定は `v23.0`）、`THREADS_GRAPH_VERSION`（未指定は `v1.0`）
 - 必須安全設定: `DRY_RUN=true|false`
-- 推奨: `APPROVER_EMAILS=kazu@example.com,manager@example.com`（承認可能なGoogleアカウントをカンマ区切りで指定）
+- 必須: `APPROVER_EMAILS=kazu@example.com`（管理人が使用するGoogleアカウント。複数指定する場合はカンマ区切り）
 
 各Xアカウントには、投稿権限を持つユーザーアクセストークンが必要です。単なるApp-only Bearer Tokenでは投稿できません。
 
@@ -71,8 +71,8 @@ HTML/CSS/JavaScriptはGitHubを正本として管理し、GitHub Actionsから�
 
 ## 運用ルール
 
-- L1は作成時点で予約済みになり、予約時刻に自動投稿。
-- L2/L3は承認待ちになり、Web Appから承認されるまで投稿されない。
+- L1/L2/L3のすべてが承認待ちになり、管理人がWeb Appから最終承認するまで投稿されない。
+- `APPROVER_EMAILS` に登録したGoogleアカウント以外は承認できない。
 - 承認後に本文・画像・媒体・日時などを変更すると承認を自動リセットする。投稿直前にも承認時ハッシュを照合する。
 - `エラー` は再試行対象。3回失敗後は自動停止し、エラー記録を確認して手動対応する。
 

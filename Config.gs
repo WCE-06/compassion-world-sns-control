@@ -1,6 +1,6 @@
 const APP = Object.freeze({
   NAME: 'COMPASSION WORLD SNS CONTROL',
-  VERSION: '0.4.0',
+  VERSION: '0.5.0',
   TZ: 'Asia/Tokyo',
   SHEETS: {
     POSTS: '投稿管理', BRANDS: 'ブランド', HISTORY: '投稿履歴',
@@ -54,4 +54,9 @@ function contentHash_(post) {
   const raw = [post['ブランド'], post['投稿種別'], post['投稿本文'], post['画像URL'], post['投稿先'], iso_(post['予約日時'])].join('\n');
   const bytes = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, raw, Utilities.Charset.UTF_8);
   return bytes.map(b => ('0' + ((b + 256) % 256).toString(16)).slice(-2)).join('');
+}
+
+function configuredApprovers_() {
+  return getProperty_('APPROVER_EMAILS', false)
+    .split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
 }

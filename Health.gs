@@ -18,7 +18,7 @@ function getSystemHealth_() {
     spreadsheet:!!props.SPREADSHEET_ID,
     queueTrigger:triggers.includes('processQueue'),
     editTrigger:triggers.includes('handlePostEdit'),
-    approverRestricted:!!props.APPROVER_EMAILS,
+    approverRestricted:configuredApprovers_().length > 0,
     configuredConnections:configured,
     totalConnections:connections.length,
     connections:connections
@@ -37,8 +37,10 @@ function runSelfTest() {
     [{brand:'COMPASSION WORLD',type:'攻めた投稿'},APP.APPROVAL.REQUIRED]
   ];
   cases.forEach(c => { if (decideApprovalLevel_(c[0]) !== c[1]) errors.push('承認ルールが不正: ' + JSON.stringify(c[0])); });
+  cases.forEach(c => { if (initialStatus_(c[1]) !== APP.STATUS.PENDING) errors.push('すべての投稿が承認待ちになっていません: ' + JSON.stringify(c[0])); });
   const health = getSystemHealth_();
   if (!health.queueTrigger) errors.push('投稿キュートリガーがありません。');
   if (!health.editTrigger) errors.push('編集監視トリガーがありません。');
+  if (!health.approverRestricted) errors.push('APPROVER_EMAILSに管理人のメールアドレスを設定してください。');
   return {ok:errors.length===0, errors:errors, health:health};
 }

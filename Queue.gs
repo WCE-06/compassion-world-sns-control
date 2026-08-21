@@ -6,14 +6,16 @@ function processQueue() {
     readObjects_(APP.SHEETS.POSTS).filter(p => {
       const due = p['予約日時'] && new Date(p['予約日時']) <= now;
       const retryDue = !p['次回試行日時'] || new Date(p['次回試行日時']) <= now;
-      return due && retryDue && [APP.STATUS.APPROVED, APP.STATUS.QUEUED, APP.STATUS.FAILED].includes(p['ステータス']) && Number(p['試行回数'] || 0) < APP.MAX_ATTEMPTS;
+      return due && retryDue && [APP.STATUS.QUEUED, APP.STATUS.FAILED].includes(p['ステータス']) && Number(p['試行回数'] || 0) < APP.MAX_ATTEMPTS;
     }).forEach(post => processOne_(post));
   } finally { lock.releaseLock(); }
 }
 
 function processOne_(post) {
-  if (!post['承認時ハッシュ'] || post['承認時ハッシュ'] !== contentHash_(post)) {
-    updatePost_(post._row, {'ステータス':APP.STATUS.PENDING,'承認者':'','承認日時':'','承認時ハッシュ':'','最終エラー':'承認後に内容が変更されたため再承認が必要です。','更新日時':now_()});
+  try {
+    assertFinalApproval_(post);
+  } catch (approvalError) {
+    updatePost_(post._row, {'ステータス':APP.STATUS.PENDING,'承認者':'','承認日時':'','承認時ハッシュ':'','最終エラー':String(approvalError.message || approvalError),'更新日時':now_()});
     return;
   }
   updatePost_(post._row, {'ステータス': APP.STATUS.POSTING, '更新日時': now_(), 'ロックキー': uuid_()});
@@ -32,6 +34,7 @@ function processOne_(post) {
 }
 
 function publishPost_(post) {
+  assertFinalApproval_(post);
   if (isDryRun_()) return {id:'dry-' + post['投稿ID'], url:'', dryRun:true};
   if (post['投稿先'] === 'X') return publishX_(post);
   if (post['投稿先'] === 'Instagram') return publishInstagram_(post);
