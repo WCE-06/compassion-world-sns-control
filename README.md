@@ -15,6 +15,7 @@ HTML/CSS/JavaScriptはGitHubを正本として管理し、GitHub Actionsから�
 - 1回の入力から複数SNSへ媒体別の投稿行を一括作成
 - 承認後の重要項目変更を検知し、承認を自動リセット
 - 承認担当者のメールアドレス制限
+- 投稿案作成時の承認依頼メールと、予約時刻3時間前の未承認リマインド
 - Web App上の導入状態表示と、メニューから実行できる導入診断・セルフテスト
 - 承認レベル3種類と素材依頼を確認できるDRY RUNデモデータ
 
@@ -57,6 +58,9 @@ HTML/CSS/JavaScriptはGitHubを正本として管理し、GitHub Actionsから�
 - 任意: `META_GRAPH_VERSION`（未指定は `v23.0`）、`THREADS_GRAPH_VERSION`（未指定は `v1.0`）
 - 必須安全設定: `DRY_RUN=true|false`
 - 必須: `APPROVER_EMAILS=kazu@example.com`（管理人が使用するGoogleアカウント。複数指定する場合はカンマ区切り）
+- 必須: `APPROVAL_NOTIFICATION_EMAIL`（承認依頼メールの送信先。公開コードにはメールアドレスを書かない）
+- 任意: `APPROVAL_REMINDER_HOURS`（未指定は予約時刻の3時間前に再通知）
+- 任意: `SNS_CONTROL_URL`（未指定は公開中のGitHub Pages）
 
 各Xアカウントには、投稿権限を持つユーザーアクセストークンが必要です。単なるApp-only Bearer Tokenでは投稿できません。
 
@@ -73,6 +77,7 @@ HTML/CSS/JavaScriptはGitHubを正本として管理し、GitHub Actionsから�
 
 - L1/L2/L3のすべてが承認待ちになり、管理人がWeb Appから最終承認するまで投稿されない。
 - `APPROVER_EMAILS` に登録したGoogleアカウント以外は承認できない。
+- 投稿案を作成すると承認依頼メールを送信し、予約時刻が近づいても未承認なら一度だけ再通知する。
 - 承認後に本文・画像・媒体・日時などを変更すると承認を自動リセットする。投稿直前にも承認時ハッシュを照合する。
 - `エラー` は再試行対象。3回失敗後は自動停止し、エラー記録を確認して手動対応する。
 

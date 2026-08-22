@@ -1,6 +1,6 @@
 const APP = Object.freeze({
   NAME: 'COMPASSION WORLD SNS CONTROL',
-  VERSION: '0.5.0',
+  VERSION: '0.6.0',
   TZ: 'Asia/Tokyo',
   SHEETS: {
     POSTS: '投稿管理', BRANDS: 'ブランド', HISTORY: '投稿履歴',
@@ -16,7 +16,8 @@ const APP = Object.freeze({
   POST_HEADERS: [
     '投稿ID','ブランド','投稿種別','投稿本文','画像URL','投稿先','予約日時',
     '承認レベル','ステータス','承認者','承認日時','作成者','作成日時',
-    '更新日時','投稿結果URL','試行回数','次回試行日時','最終エラー','ロックキー','承認時ハッシュ'
+    '更新日時','投稿結果URL','試行回数','次回試行日時','最終エラー','ロックキー','承認時ハッシュ',
+    '承認依頼通知日時','承認催促通知日時'
   ],
   MAX_ATTEMPTS: 3,
   RETRY_MINUTES: [5, 20, 60]

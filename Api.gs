@@ -34,6 +34,7 @@ function createPost(input) {
   const level = decideApprovalLevel_(input);
   const now = now_();
   const groupId = uuid_();
+  const createdIds = [];
   channels.forEach(channel => {
     const row = {
       '投稿ID': groupId + '-' + channel.toLowerCase(), 'ブランド': input.brand, '投稿種別': input.type,
@@ -44,7 +45,9 @@ function createPost(input) {
       '更新日時': now, '試行回数': 0
     };
     appendObject_(APP.SHEETS.POSTS, row);
+    createdIds.push(row['投稿ID']);
   });
+  sendApprovalRequestForIds_(createdIds, false);
   return {ok: true, count: channels.length, approvalLevel: level, status: initialStatus_(level)};
 }
 

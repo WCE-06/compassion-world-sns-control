@@ -8,6 +8,7 @@ function processQueue() {
       const retryDue = !p['次回試行日時'] || new Date(p['次回試行日時']) <= now;
       return due && retryDue && [APP.STATUS.QUEUED, APP.STATUS.FAILED].includes(p['ステータス']) && Number(p['試行回数'] || 0) < APP.MAX_ATTEMPTS;
     }).forEach(post => processOne_(post));
+    sendPendingApprovalReminders();
   } finally { lock.releaseLock(); }
 }
 

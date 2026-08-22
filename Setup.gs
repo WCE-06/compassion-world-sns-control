@@ -293,6 +293,7 @@ function handlePostEdit(e) {
     const post = posts.find(p => p._row === row);
     if (!post || [APP.STATUS.POSTED, APP.STATUS.CANCELLED].includes(post['ステータス'])) continue;
     const level = decideApprovalLevel_({brand:post['ブランド'], type:post['投稿種別']});
-    updatePost_(row, {'承認レベル':level,'ステータス':initialStatus_(level),'承認者':'','承認日時':'','承認時ハッシュ':'','更新日時':now_(),'最終エラー':'内容変更のため再承認が必要です。'});
+    updatePost_(row, {'承認レベル':level,'ステータス':initialStatus_(level),'承認者':'','承認日時':'','承認時ハッシュ':'','承認依頼通知日時':'','承認催促通知日時':'','更新日時':now_(),'最終エラー':'内容変更のため再承認が必要です。'});
+    sendApprovalRequestForIds_([post['投稿ID']], false);
   }
 }
