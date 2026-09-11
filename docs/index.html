@@ -6,7 +6,7 @@
   <section id="login" class="card connect">
     <p class="eyebrow dark">STAFF LOGIN</p><h2>従業員ログイン</h2>
     <p>管理人から登録されたメールアドレスと、このシステム専用のパスワードでログインしてください。</p>
-    <form id="loginForm"><label>メールアドレス<input name="email" type="email" autocomplete="username" required></label><label>パスワード<input name="password" type="password" autocomplete="current-password" required></label><button type="submit">ログイン</button></form>
+    <form id="loginForm" action="#" method="post" onsubmit="return false"><label>メールアドレス<input name="email" type="email" autocomplete="username" required></label><label>パスワード<input name="password" type="password" autocomplete="current-password" required></label><button type="submit">ログイン</button></form>
     <button id="resetPassword" class="textButton" type="button">パスワードを忘れた場合</button>
     <p id="firebaseNotice" class="setupNotice" hidden>従業員認証は現在設定中です。Firebaseの設定完了後にログインできます。</p>
   </section>
@@ -38,4 +38,4 @@
   </div>
 </main>
 <footer class="siteFooter"><a href="privacy.html">プライバシーポリシー</a><a href="terms.html">利用規約</a><a href="data-deletion.html">データ削除</a></footer>
-<div id="toast"></div><script type="module" src="app.js"></script></body></html>
+<div id="toast"></div><script type="module" src="app.js?v=0.8.1"></script></body></html>

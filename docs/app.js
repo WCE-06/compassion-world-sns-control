@@ -1,6 +1,6 @@
 import {initializeApp,deleteApp} from 'https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js';
 import {getAuth,onAuthStateChanged,signInWithEmailAndPassword,createUserWithEmailAndPassword,updateProfile,deleteUser,signOut,sendPasswordResetEmail} from 'https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js';
-import {firebaseConfig} from './firebase-config.js';
+import {firebaseConfig} from './firebase-config.js?v=0.8.1';
 
 const BRANDS=['COMPASSION WORLD','おもひで商店','Aozora Kitchen','FEBBRAIO','アートリエ','Kazu個人'];
 const TYPES=['通常','イベント','料金改定','Kazu本人名義','攻めた投稿','緊急告知'];
