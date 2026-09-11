@@ -41,7 +41,7 @@ function createPost(input) {
       '投稿本文': input.body.trim(), '画像URL': (input.imageUrl || '').trim(),
       '投稿先': channel, '予約日時': new Date(input.scheduledAt),
       '承認レベル': level, 'ステータス': initialStatus_(level),
-      '作成者': Session.getActiveUser().getEmail() || 'unknown', '作成日時': now,
+      '作成者': input._actor && input._actor.email ? String(input._actor.email) : (Session.getActiveUser().getEmail() || 'unknown'), '作成日時': now,
       '更新日時': now, '試行回数': 0
     };
     appendObject_(APP.SHEETS.POSTS, row);

@@ -1,19 +1,74 @@
-const API='https://script.google.com/macros/s/AKfycbwKfxQIgiEHbruUR5XXaVx5GToWDOKDORqykYAo9rON-3XaePm06QNajQx5k5vCL7Ga/exec';
+import {initializeApp} from 'https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js';
+import {getAuth,onAuthStateChanged,signInWithEmailAndPassword,signOut,sendPasswordResetEmail} from 'https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js';
+import {firebaseConfig,functionsRegion} from './firebase-config.js';
+
 const BRANDS=['COMPASSION WORLD','おもひで商店','Aozora Kitchen','FEBBRAIO','アートリエ','Kazu個人'];
 const TYPES=['通常','イベント','料金改定','Kazu本人名義','攻めた投稿','緊急告知'];
-const CHANNELS=['Instagram','Threads','X']; let state={},view='today',currentThreadsBrand='',currentThreadsAuthUrl='';
-const $=s=>document.querySelector(s), esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-document.addEventListener('DOMContentLoaded',()=>{fill('brand',BRANDS);fill('type',TYPES);$('#channels').innerHTML=CHANNELS.map((v,i)=>`<label><input type="checkbox" name="channels" value="${v}" ${i?'':'checked'}>${v}</label>`).join('');const d=new Date(Date.now()+3600000);d.setMinutes(0,0,0);$('[name=scheduledAt]').value=localDate(d);const key=localStorage.getItem('cw_sns_api_key');if(key){$('#apiKey').value=key;connect()} });
-function fill(n,v){$(`[name=${n}]`).innerHTML=v.map(x=>`<option>${esc(x)}</option>`).join('')} function localDate(d){const z=n=>String(n).padStart(2,'0');return `${d.getFullYear()}-${z(d.getMonth()+1)}-${z(d.getDate())}T${z(d.getHours())}:${z(d.getMinutes())}`}
-$('#saveKey').onclick=()=>{const k=$('#apiKey').value.trim();if(!k)return toast('接続キーを入力してください');localStorage.setItem('cw_sns_api_key',k);connect()};
-async function sign(text,key){const cryptoKey=await crypto.subtle.importKey('raw',new TextEncoder().encode(key),{name:'HMAC',hash:'SHA-256'},false,['sign']);const bytes=new Uint8Array(await crypto.subtle.sign('HMAC',cryptoKey,new TextEncoder().encode(text)));return [...bytes].map(b=>b.toString(16).padStart(2,'0')).join('')}
-function b64json(value){const bytes=new TextEncoder().encode(JSON.stringify(value||{}));let s='';bytes.forEach(b=>s+=String.fromCharCode(b));return btoa(s).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')}
-async function api(action,payload={}){const key=localStorage.getItem('cw_sns_api_key')||'';const ts=Date.now().toString(),nonce=crypto.randomUUID(),body=b64json(payload),sig=await sign([action,ts,nonce,body].join('|'),key),cb='cwcb_'+nonce.replaceAll('-','');return new Promise((resolve,reject)=>{const script=document.createElement('script');const timer=setTimeout(()=>done(new Error('GASへの接続がタイムアウトしました')),15000);function done(err,data){clearTimeout(timer);delete window[cb];script.remove();err?reject(err):resolve(data)}window[cb]=r=>r.ok?done(null,r.data):done(new Error(r.error||'APIエラー'));script.onerror=()=>done(new Error('GAS APIを読み込めません'));script.src=API+'?'+new URLSearchParams({api:'1',action,ts,nonce,payload:body,sig,callback:cb});document.head.appendChild(script)})}
-async function connect(){try{state=await api('dashboard');$('#connect').hidden=true;$('#app').hidden=false;$('#mode').textContent=state.dryRun?'DRY RUN（実投稿なし）':'LIVE';renderHealth();renderThreadsConnections();render()}catch(e){localStorage.removeItem('cw_sns_api_key');$('#connect').hidden=false;$('#app').hidden=true;fail(e)}}
-function renderHealth(){const h=state.health;const parts=[[h.queueTrigger&&h.editTrigger,'自動処理 '+(h.queueTrigger&&h.editTrigger?'OK':'要設定')],[h.approverRestricted,'承認者 '+(h.approverRestricted?'制限済み':'未制限')],[h.notificationEmailConfigured,'承認メール '+(h.notificationEmailConfigured?'設定済み':'未設定')],[state.dryRun||h.configuredConnections===h.totalConnections,'API設定 '+h.configuredConnections+'/'+h.totalConnections]];$('#health').innerHTML=parts.map(p=>`<span class="${p[0]?'':'warn'}">${esc(p[1])}</span>`).join('')}
-function renderThreadsConnections(){const items=state.threadsConnections||[];$('#threadsAccounts').innerHTML=items.map(item=>`<article class="connection ${item.connected?'connected':''}"><div><b>${esc(item.brand)}</b><small>${esc(item.username)}</small></div><span>${item.connected?'接続済み':'未接続'}</span>${item.connected?'':`<button type="button" onclick="startThreadsConnect('${esc(item.brand)}')">接続する</button>`}</article>`).join('')}
-async function startThreadsConnect(brand){try{const result=await api('threadsAuthStart',{brand});const browserUrl=new URL('threads-auth.html',location.href);browserUrl.searchParams.set('auth',result.authUrl);currentThreadsBrand=brand;currentThreadsAuthUrl=browserUrl.href;$('#threadsQrPanel').hidden=false;$('#threadsQrTitle').textContent=result.brand+' '+result.username;$('#threadsAuthLink').href=browserUrl.href;const box=$('#threadsQr');box.innerHTML='';if(window.QRCode){new QRCode(box,{text:browserUrl.href,width:196,height:196,colorDark:'#17223b',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.M})}else{box.innerHTML='<p>QRコードを読み込めませんでした。認証URLをコピーしてください。</p>'}$('#threadsQrPanel').scrollIntoView({behavior:'smooth',block:'center'})}catch(e){fail(e)}}
-$('#refreshThreads').onclick=connect;$('#copyThreadsAuthUrl').onclick=async()=>{if(!currentThreadsAuthUrl)return toast('先に接続するアカウントを選んでください');try{await navigator.clipboard.writeText(currentThreadsAuthUrl);toast('認証URLをコピーしました。スマホのブラウザへ貼り付けてください')}catch(e){prompt('このURLをコピーしてください',currentThreadsAuthUrl)}};$('#regenerateThreadsQr').onclick=()=>{if(currentThreadsBrand)startThreadsConnect(currentThreadsBrand)};$('#closeThreadsQr').onclick=()=>{$('#threadsQrPanel').hidden=true};
+const CHANNELS=['Instagram','Threads','X'];
+const ROLE_LABELS={admin:'管理人',editor:'運用スタッフ',viewer:'閲覧スタッフ'};
+const configured=firebaseConfig.apiKey&&firebaseConfig.apiKey!=='REPLACE_ME'&&firebaseConfig.projectId&&firebaseConfig.projectId!=='REPLACE_ME';
+const firebaseApp=configured?initializeApp(firebaseConfig):null;
+const auth=configured?getAuth(firebaseApp):null;
+const API=configured?`https://${functionsRegion}-${firebaseConfig.projectId}.cloudfunctions.net/snsControlApi`:'';
+let state={},view='today',currentThreadsBrand='',currentThreadsAuthUrl='',session=null;
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+document.addEventListener('DOMContentLoaded',()=>{
+  fill('brand',BRANDS);fill('type',TYPES);
+  $('#channels').innerHTML=CHANNELS.map((v,i)=>`<label><input type="checkbox" name="channels" value="${v}" ${i?'':'checked'}>${v}</label>`).join('');
+  const d=new Date(Date.now()+3600000);d.setMinutes(0,0,0);$('[name=scheduledAt]').value=localDate(d);
+  if(!configured){$('#firebaseNotice').hidden=false;$('#mode').textContent='設定待ち';return;}
+  onAuthStateChanged(auth,async user=>{if(!user)return showLogin();try{await connect()}catch(e){showLogin();fail(e)}});
+});
+
+function fill(n,v){$(`[name=${n}]`).innerHTML=v.map(x=>`<option>${esc(x)}</option>`).join('')}
+function localDate(d){const z=n=>String(n).padStart(2,'0');return `${d.getFullYear()}-${z(d.getMonth()+1)}-${z(d.getDate())}T${z(d.getHours())}:${z(d.getMinutes())}`}
+function showLogin(){$('#login').hidden=false;$('#app').hidden=true;$('#mode').textContent='ログアウト'}
+
+$('#loginForm').addEventListener('submit',async e=>{e.preventDefault();if(!configured)return;const fd=new FormData(e.target);try{await signInWithEmailAndPassword(auth,String(fd.get('email')).trim(),String(fd.get('password')))}catch(_){fail(new Error('メールアドレスまたはパスワードを確認してください。'))}});
+$('#resetPassword').onclick=async()=>{if(!configured)return;const email=$('#loginForm [name=email]').value.trim();if(!email)return toast('先にメールアドレスを入力してください');try{await sendPasswordResetEmail(auth,email);toast('パスワード再設定メールを送信しました')}catch(_){toast('入力内容を確認してください')}};
+$('#logout').onclick=()=>signOut(auth);
+
+async function api(action,payload={}){
+  const user=auth.currentUser;if(!user)throw new Error('もう一度ログインしてください。');
+  const token=await user.getIdToken();
+  const response=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({action,payload})});
+  const result=await response.json().catch(()=>({ok:false,error:'サーバーの応答を読み取れませんでした。'}));
+  if(!response.ok||!result.ok)throw new Error(result.error||'APIエラー');
+  return result.data;
+}
+
+async function connect(){
+  state=await api('dashboard');session=state.session;
+  $('#login').hidden=true;$('#app').hidden=false;
+  $('#currentUser').textContent=session.name||session.email;$('#currentRole').textContent=ROLE_LABELS[session.role]||session.role;
+  document.body.classList.toggle('readonly',session.role==='viewer');$('#mode').textContent=state.dryRun?'DRY RUN（実投稿なし）':'LIVE';
+  renderHealth();renderThreadsConnections();render();
+  if(session.role==='admin'){$('#staffPanel').hidden=false;await loadStaff()}else{$('#staffPanel').hidden=true}
+}
+function renderHealth(){const h=state.health;const parts=[[h.queueTrigger&&h.editTrigger,'自動処理 '+(h.queueTrigger&&h.editTrigger?'OK':'要設定')],[true,'最終承認 管理人のみ'],[h.notificationEmailConfigured,'承認メール '+(h.notificationEmailConfigured?'設定済み':'未設定')],[state.dryRun||h.configuredConnections===h.totalConnections,'API設定 '+h.configuredConnections+'/'+h.totalConnections]];$('#health').innerHTML=parts.map(p=>`<span class="${p[0]?'':'warn'}">${esc(p[1])}</span>`).join('')}
+function renderThreadsConnections(){const items=state.threadsConnections||[];$('#threadsAccounts').innerHTML=items.map(item=>`<article class="connection ${item.connected?'connected':''}"><div><b>${esc(item.brand)}</b><small>${esc(item.username)}</small></div><span>${item.connected?'接続済み':'未接続'}</span>${item.connected||session.role!=='admin'?'':`<button type="button" onclick="window.startThreadsConnect('${esc(item.brand)}')">接続する</button>`}</article>`).join('')}
+
+window.startThreadsConnect=async brand=>{try{const result=await api('threadsAuthStart',{brand});const browserUrl=new URL('threads-auth.html',location.href);browserUrl.searchParams.set('auth',result.authUrl);currentThreadsBrand=brand;currentThreadsAuthUrl=browserUrl.href;$('#threadsQrPanel').hidden=false;$('#threadsQrTitle').textContent=result.brand+' '+result.username;$('#threadsAuthLink').href=browserUrl.href;const box=$('#threadsQr');box.innerHTML='';if(window.QRCode){new QRCode(box,{text:browserUrl.href,width:196,height:196,colorDark:'#17223b',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.M})}else{box.innerHTML='<p>QRコードを読み込めませんでした。</p>'}$('#threadsQrPanel').scrollIntoView({behavior:'smooth',block:'center'})}catch(e){fail(e)}};
+$('#refreshThreads').onclick=connect;
+$('#copyThreadsAuthUrl').onclick=async()=>{if(!currentThreadsAuthUrl)return toast('先に接続するアカウントを選んでください');try{await navigator.clipboard.writeText(currentThreadsAuthUrl);toast('認証URLをコピーしました')}catch(_){prompt('このURLをコピーしてください',currentThreadsAuthUrl)}};
+$('#regenerateThreadsQr').onclick=()=>{if(currentThreadsBrand)window.startThreadsConnect(currentThreadsBrand)};
+$('#closeThreadsQr').onclick=()=>{$('#threadsQrPanel').hidden=true};
+
 function render(){['today','pending','tomorrow','materials'].forEach(k=>$(`#${k}Count`).textContent=(state[k]||[]).length);document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.view===view));const items=state[view]||[];$('#list').innerHTML=items.length?items.map(view==='materials'?materialCard:postCard).join(''):'<div class="empty">該当する項目はありません</div>';$('#errors').innerHTML=(state.recentErrors||[]).length?'<b>最近のエラー</b><br>'+state.recentErrors.map(e=>`${esc(e.at)} ${esc(e.channel)}: ${esc(e.message)}`).join('<br>'):''}
-function postCard(p){const a=p.status==='承認待ち'?`<div class="actions"><button onclick="approve('${p.id}')">承認</button><button class="reject" onclick="rejectPost('${p.id}')">差戻し</button></div>`:'';return `<article class="post"><div class="meta"><b>${esc(p.scheduledAt.replace('T',' ').slice(0,16))}</b><br>${esc(p.brand)}<br><span class="pill">${esc(p.channel)}</span><span class="pill">${esc(p.approval)}</span><span class="pill">${esc(p.status)}</span></div><div class="body">${esc(p.body)}</div>${a}</article>`}function materialCard(m){return `<article class="post"><div class="meta"><b>${esc(m.due)}</b><br>${esc(m.brand)}<br><span class="pill">${esc(m.status)}</span></div><div><b>${esc(m.type)}</b><div class="body">${esc(m.request)}</div></div><div class="meta">${esc(m.owner)}</div></article>`}
-$('nav').addEventListener('click',e=>{const b=e.target.closest('.tab');if(b){view=b.dataset.view;render()}});$('#postForm').addEventListener('submit',async e=>{e.preventDefault();const fd=new FormData(e.target),input=Object.fromEntries(fd);input.channels=fd.getAll('channels');if(!input.channels.length)return toast('投稿先を選択してください');try{const r=await api('create',input);toast(`${r.count}件を承認待ち（${r.approvalLevel}）で追加しました`);e.target.body.value='';await connect()}catch(x){fail(x)}});async function approve(id){if(!confirm('この本文・画像・投稿先・予約日時で公開してよいですか？'))return;try{await api('approve',{id});toast('最終承認しました。予約時刻に投稿されます');await connect()}catch(e){fail(e)}}async function rejectPost(id){const reason=prompt('差戻し理由');if(reason===null)return;try{await api('reject',{id,reason});toast('差戻しました');await connect()}catch(e){fail(e)}}function toast(s){const t=$('#toast');t.textContent=s;t.style.display='block';setTimeout(()=>t.style.display='none',2500)}function fail(e){toast(e.message||String(e))}
+function postCard(p){const canApprove=session.role==='admin'&&p.status==='承認待ち';const a=canApprove?`<div class="actions"><button onclick="window.approve('${p.id}')">承認</button><button class="reject" onclick="window.rejectPost('${p.id}')">差戻し</button></div>`:'';return `<article class="post"><div class="meta"><b>${esc(p.scheduledAt.replace('T',' ').slice(0,16))}</b><br>${esc(p.brand)}<br><span class="pill">${esc(p.channel)}</span><span class="pill">${esc(p.approval)}</span><span class="pill">${esc(p.status)}</span></div><div class="body">${esc(p.body)}</div>${a}</article>`}
+function materialCard(m){return `<article class="post"><div class="meta"><b>${esc(m.due)}</b><br>${esc(m.brand)}<br><span class="pill">${esc(m.status)}</span></div><div><b>${esc(m.type)}</b><div class="body">${esc(m.request)}</div></div><div class="meta">${esc(m.owner)}</div></article>`}
+$('nav').addEventListener('click',e=>{const b=e.target.closest('.tab');if(b){view=b.dataset.view;render()}});
+$('#postForm').addEventListener('submit',async e=>{e.preventDefault();const fd=new FormData(e.target),input=Object.fromEntries(fd);input.channels=fd.getAll('channels');if(!input.channels.length)return toast('投稿先を選択してください');try{const r=await api('create',input);toast(`${r.count}件を承認待ち（${r.approvalLevel}）で追加しました`);e.target.body.value='';await connect()}catch(x){fail(x)}});
+window.approve=async id=>{if(!confirm('この本文・画像・投稿先・予約日時で公開してよいですか？'))return;try{await api('approve',{id});toast('最終承認しました。予約時刻に投稿されます');await connect()}catch(e){fail(e)}};
+window.rejectPost=async id=>{const reason=prompt('差戻し理由');if(reason===null)return;try{await api('reject',{id,reason});toast('差戻しました');await connect()}catch(e){fail(e)}};
+
+async function loadStaff(){const result=await api('listEmployees');renderStaff(result.employees||[])}
+function renderStaff(items){$('#staffList').innerHTML=items.map(item=>`<article class="staffRow"><div><b>${esc(item.name||'名称未設定')}</b><br><small>${item.active?'利用中':'停止中'}</small></div><div>${esc(item.email)}</div><select aria-label="${esc(item.name)}の権限" onchange="window.setEmployeeRole('${esc(item.uid)}',this.value)" ${item.uid===session.uid?'disabled':''}>${Object.entries(ROLE_LABELS).map(([value,label])=>`<option value="${value}" ${item.role===value?'selected':''}>${label}</option>`).join('')}</select>${item.uid===session.uid?'':`<button class="${item.active?'danger':'subtle'}" onclick="window.setEmployeeActive('${esc(item.uid)}',${!item.active})">${item.active?'停止':'再開'}</button>`}</article>`).join('')||'<div class="empty">登録済み従業員はいません</div>'}
+$('#refreshStaff').onclick=loadStaff;
+$('#staffForm').addEventListener('submit',async e=>{e.preventDefault();const input=Object.fromEntries(new FormData(e.target));if(input.role==='admin'&&!confirm('この従業員を管理人として登録しますか？ 管理人は投稿承認・SNS連携・従業員管理を行えます。'))return;try{await api('createEmployee',input);await sendPasswordResetEmail(auth,input.email);toast('従業員を登録し、パスワード設定メールを送信しました');e.target.reset();await loadStaff()}catch(err){fail(err)}});
+window.setEmployeeActive=async(uid,active)=>{if(!confirm(active?'この従業員の利用を再開しますか？':'この従業員を利用停止しますか？'))return;try{await api('setEmployeeActive',{uid,active});toast(active?'利用を再開しました':'利用を停止しました');await loadStaff()}catch(e){fail(e)}};
+window.setEmployeeRole=async(uid,role)=>{if(!confirm(`この従業員の権限を「${ROLE_LABELS[role]}」へ変更しますか？`)){await loadStaff();return}try{await api('setEmployeeRole',{uid,role});toast('権限を変更しました');await loadStaff()}catch(e){fail(e);await loadStaff()}};
+function toast(s){const t=$('#toast');t.textContent=s;t.style.display='block';setTimeout(()=>t.style.display='none',3000)}
+function fail(e){toast(e.message||String(e))}

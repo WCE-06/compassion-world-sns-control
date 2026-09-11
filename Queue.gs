@@ -16,7 +16,7 @@ function processOne_(post) {
   try {
     assertFinalApproval_(post);
   } catch (approvalError) {
-    updatePost_(post._row, {'ステータス':APP.STATUS.PENDING,'承認者':'','承認日時':'','承認時ハッシュ':'','最終エラー':String(approvalError.message || approvalError),'更新日時':now_()});
+    updatePost_(post._row, {'ステータス':APP.STATUS.PENDING,'承認者':'','承認者UID':'','承認者権限':'','承認日時':'','承認時ハッシュ':'','最終エラー':String(approvalError.message || approvalError),'更新日時':now_()});
     return;
   }
   updatePost_(post._row, {'ステータス': APP.STATUS.POSTING, '更新日時': now_(), 'ロックキー': uuid_()});

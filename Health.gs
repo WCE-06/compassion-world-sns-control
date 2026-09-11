@@ -42,7 +42,6 @@ function runSelfTest() {
   const health = getSystemHealth_();
   if (!health.queueTrigger) errors.push('投稿キュートリガーがありません。');
   if (!health.editTrigger) errors.push('編集監視トリガーがありません。');
-  if (!health.approverRestricted) errors.push('APPROVER_EMAILSに管理人のメールアドレスを設定してください。');
   if (!getProperty_('APPROVAL_NOTIFICATION_EMAIL', false)) errors.push('APPROVAL_NOTIFICATION_EMAILに承認依頼メールの送信先を設定してください。');
   return {ok:errors.length===0, errors:errors, health:health};
 }

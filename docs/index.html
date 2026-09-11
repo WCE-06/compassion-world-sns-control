@@ -3,8 +3,15 @@
 <body>
 <header><div><p class="eyebrow">COMPASSION WORLD</p><h1>SNS CONTROL</h1></div><span id="mode" class="badge">接続中</span></header>
 <main>
-  <section id="connect" class="card connect"><h2>GASと接続</h2><p>初回だけ接続キーを入力してください。キーはこのブラウザ内だけに保存されます。</p><div class="connectRow"><input id="apiKey" type="password" autocomplete="off" placeholder="接続キー"><button id="saveKey">接続する</button></div></section>
+  <section id="login" class="card connect">
+    <p class="eyebrow dark">STAFF LOGIN</p><h2>従業員ログイン</h2>
+    <p>管理人から登録されたメールアドレスと、このシステム専用のパスワードでログインしてください。</p>
+    <form id="loginForm"><label>メールアドレス<input name="email" type="email" autocomplete="username" required></label><label>パスワード<input name="password" type="password" autocomplete="current-password" required></label><button type="submit">ログイン</button></form>
+    <button id="resetPassword" class="textButton" type="button">パスワードを忘れた場合</button>
+    <p id="firebaseNotice" class="setupNotice" hidden>従業員認証は現在設定中です。Firebaseの設定完了後にログインできます。</p>
+  </section>
   <div id="app" hidden>
+    <section class="sessionBar"><div><b id="currentUser"></b><span id="currentRole" class="pill"></span></div><button id="logout" class="subtle" type="button">ログアウト</button></section>
     <section id="health" class="health"></section>
     <section class="card threadsConnect">
       <div class="sectionHead"><div><p class="eyebrow dark">SMARTPHONE OAUTH</p><h2>Threadsをスマホで接続</h2></div><button id="refreshThreads" class="subtle" type="button">状態を更新</button></div>
@@ -23,7 +30,12 @@
     </form></section>
     <nav><button class="tab active" data-view="today">今日の投稿 <b id="todayCount">0</b></button><button class="tab" data-view="pending">承認待ち <b id="pendingCount">0</b></button><button class="tab" data-view="tomorrow">明日の候補 <b id="tomorrowCount">0</b></button><button class="tab" data-view="materials">素材依頼 <b id="materialsCount">0</b></button></nav>
     <section id="list" class="list"></section><section id="errors" class="errors"></section>
+    <section id="staffPanel" class="card staffPanel" hidden>
+      <div class="sectionHead"><div><p class="eyebrow dark">ADMIN ONLY</p><h2>従業員アカウント</h2></div><button id="refreshStaff" class="subtle" type="button">更新</button></div>
+      <form id="staffForm" class="staffForm"><label>氏名<input name="name" required></label><label>メールアドレス<input name="email" type="email" required></label><label>初期権限<select name="role"><option value="editor">運用スタッフ</option><option value="viewer">閲覧スタッフ</option><option value="admin">管理人</option></select></label><button type="submit">招待する</button></form>
+      <p class="help">登録後、本人へパスワード設定メールを送ります。退職時は対象者だけ利用停止できます。</p><div id="staffList" class="staffList"></div>
+    </section>
   </div>
 </main>
 <footer class="siteFooter"><a href="privacy.html">プライバシーポリシー</a><a href="terms.html">利用規約</a><a href="data-deletion.html">データ削除</a></footer>
-<div id="toast"></div><script src="app.js"></script></body></html>
+<div id="toast"></div><script type="module" src="app.js"></script></body></html>

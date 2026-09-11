@@ -177,6 +177,7 @@ function setupSystem() {
   createSheet_(ss, APP.SHEETS.ERRORS, ['エラーID','投稿ID','発生日時','投稿先','処理','HTTPコード','内容','再試行可','解決日時']);
   createSheet_(ss, APP.SHEETS.MATERIALS, ['依頼ID','ブランド','必要日','素材種別','依頼内容','担当','ステータス','素材URL','作成日時']);
   createSheet_(ss, APP.SHEETS.SETTINGS, ['キー','値','説明']);
+  createSheet_(ss, APP.SHEETS.AUDIT, ['監査ID','日時','ユーザーID','メールアドレス','氏名','権限','操作','対象ID','結果','詳細']);
   seedBrands_();
   seedSettings_();
   applyValidations_();
@@ -259,7 +260,7 @@ function showSystemHealth() {
     'モード: ' + (health.dryRun ? 'DRY RUN' : 'LIVE'),
     '投稿トリガー: ' + (health.queueTrigger ? 'OK' : '未設定'),
     '編集監視: ' + (health.editTrigger ? 'OK' : '未設定'),
-    '承認者制限: ' + (health.approverRestricted ? '設定済み' : '未設定（アクセスユーザー全員）'),
+    'シート直接承認の制限: ' + (health.approverRestricted ? '設定済み' : '未使用（Web管理画面はFirebase権限で保護）'),
     'API設定: ' + health.configuredConnections + '/' + health.totalConnections
   ];
   SpreadsheetApp.getUi().alert('SNS CONTROL 導入診断', lines.join('\n'), SpreadsheetApp.getUi().ButtonSet.OK);
@@ -293,7 +294,7 @@ function handlePostEdit(e) {
     const post = posts.find(p => p._row === row);
     if (!post || [APP.STATUS.POSTED, APP.STATUS.CANCELLED].includes(post['ステータス'])) continue;
     const level = decideApprovalLevel_({brand:post['ブランド'], type:post['投稿種別']});
-    updatePost_(row, {'承認レベル':level,'ステータス':initialStatus_(level),'承認者':'','承認日時':'','承認時ハッシュ':'','承認依頼通知日時':'','承認催促通知日時':'','更新日時':now_(),'最終エラー':'内容変更のため再承認が必要です。'});
+    updatePost_(row, {'承認レベル':level,'ステータス':initialStatus_(level),'承認者':'','承認者UID':'','承認者権限':'','承認日時':'','承認時ハッシュ':'','承認依頼通知日時':'','承認催促通知日時':'','更新日時':now_(),'最終エラー':'内容変更のため再承認が必要です。'});
     sendApprovalRequestForIds_([post['投稿ID']], false);
   }
 }

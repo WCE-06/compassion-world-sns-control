@@ -1,8 +1,10 @@
-# COMPASSION WORLD SNS CONTROL — MVP v0.5
+# COMPASSION WORLD SNS CONTROL — MVP v0.7
 
-Googleスプレッドシートを台帳、Google Apps Script Web Appを管理画面として使うSNS予約投稿システムです。
+Googleスプレッドシートを台帳、GitHub Pagesを管理画面、Google Apps Scriptを投稿処理基盤として使うSNS予約投稿システムです。
 
 HTML/CSS/JavaScriptはGitHubを正本として管理し、GitHub Actionsから既存Apps Scriptへ同期する構成です。初回設定は `GITHUB.md`、SNS認証は `SNS_CONNECTION_GUIDE.md` を参照してください。
+
+従業員ログインはFirebase Authentication、権限検証はFirebase Functionsを使用します。共有接続キーを従業員へ配る旧方式は廃止しました。移行手順は `FIREBASE_AUTH_SETUP.md` を参照してください。
 
 ## MVPでできること
 
@@ -14,9 +16,12 @@ HTML/CSS/JavaScriptはGitHubを正本として管理し、GitHub Actionsから�
 - 初期状態は `DRY_RUN=true`。APIへ送らず一連の動作を確認可能
 - 1回の入力から複数SNSへ媒体別の投稿行を一括作成
 - 承認後の重要項目変更を検知し、承認を自動リセット
-- 承認担当者のメールアドレス制限
+- Firebaseの権限による管理人限定の最終承認
 - 投稿案作成時の承認依頼メールと、予約時刻3時間前の未承認リマインド
 - Web App上の導入状態表示と、メニューから実行できる導入診断・セルフテスト
+- 従業員ごとのメールアドレス／パスワード認証
+- 管理人、運用スタッフ、閲覧スタッフの役割別権限
+- 従業員の招待・利用停止と操作監査ログ
 - 承認レベル3種類と素材依頼を確認できるDRY RUNデモデータ
 
 ## 導入
@@ -24,7 +29,7 @@ HTML/CSS/JavaScriptはGitHubを正本として管理し、GitHub Actionsから�
 1. 空のGoogleスプレッドシートを作成し、「拡張機能」→「Apps Script」を開く。
 2. このフォルダの `.gs` / `.html` と `appsscript.json` を同名で登録する（または clasp でpushする）。
 3. `setupSystem` を一度実行して権限を許可する。
-4. 「デプロイ」→「新しいデプロイ」→「ウェブアプリ」。実行ユーザーは自分、アクセス範囲は運用メンバーに合わせる。
+4. 「デプロイ」→「新しいデプロイ」→「ウェブアプリ」。実行ユーザーは自分、アクセス範囲は外部ゲートウェイから到達可能な設定にする（すべての操作は署名検証で保護される）。
 5. Script Propertiesに認証情報を登録。値は絶対にシートへ書かない。
 6. まずDRY RUNで投稿作成→承認→予約時刻経過→履歴記録まで確認する。
 7. 確認後にScript Propertiesの `DRY_RUN` を `false` にする。
@@ -40,8 +45,8 @@ HTML/CSS/JavaScriptはGitHubを正本として管理し、GitHub Actionsから�
 
 ## 本番化チェックリスト
 
-- Web Appのアクセス範囲を運用メンバーだけに限定
-- `APPROVER_EMAILS` を設定
+- Firebase Authenticationの一般登録を設けず、管理人から従業員を招待
+- Firebase FunctionsとGASの共有秘密鍵をSecret／Script Propertiesへ設定
 - 使用するブランド×媒体だけAPI認証情報を設定
 - X Developer Consoleで課金上限・残高アラートを設定
 - Metaアプリの必要権限と本番モードを確認
@@ -57,7 +62,7 @@ HTML/CSS/JavaScriptはGitHubを正本として管理し、GitHub Actionsから�
 - Threads: `<接頭辞>_THREADS_USER_ID`, `<接頭辞>_THREADS_ACCESS_TOKEN`
 - 任意: `META_GRAPH_VERSION`（未指定は `v23.0`）、`THREADS_GRAPH_VERSION`（未指定は `v1.0`）
 - 必須安全設定: `DRY_RUN=true|false`
-- 必須: `APPROVER_EMAILS=kazu@example.com`（管理人が使用するGoogleアカウント。複数指定する場合はカンマ区切り）
+- 任意（シートから直接承認する旧運用のみ）: `APPROVER_EMAILS`（許可するGoogleアカウント。通常のWeb管理画面ではFirebaseの管理人権限を使用）
 - 必須: `APPROVAL_NOTIFICATION_EMAIL`（承認依頼メールの送信先。公開コードにはメールアドレスを書かない）
 - 任意: `APPROVAL_REMINDER_HOURS`（未指定は予約時刻の3時間前に再通知）
 - 任意: `SNS_CONTROL_URL`（未指定は公開中のGitHub Pages）
@@ -76,7 +81,7 @@ HTML/CSS/JavaScriptはGitHubを正本として管理し、GitHub Actionsから�
 ## 運用ルール
 
 - L1/L2/L3のすべてが承認待ちになり、管理人がWeb Appから最終承認するまで投稿されない。
-- `APPROVER_EMAILS` に登録したGoogleアカウント以外は承認できない。
+- Web管理画面ではFirebase上の「管理人」だけが最終承認できる。運用スタッフと閲覧スタッフは承認できない。
 - 投稿案を作成すると承認依頼メールを送信し、予約時刻が近づいても未承認なら一度だけ再通知する。
 - 承認後に本文・画像・媒体・日時などを変更すると承認を自動リセットする。投稿直前にも承認時ハッシュを照合する。
 - `エラー` は再試行対象。3回失敗後は自動停止し、エラー記録を確認して手動対応する。
