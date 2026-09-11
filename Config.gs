@@ -1,6 +1,6 @@
 const APP = Object.freeze({
   NAME: 'COMPASSION WORLD SNS CONTROL',
-  VERSION: '0.8.0',
+  VERSION: '0.9.0',
   TZ: 'Asia/Tokyo',
   SHEETS: {
     POSTS: '投稿管理', BRANDS: 'ブランド', HISTORY: '投稿履歴',
@@ -24,7 +24,7 @@ const APP = Object.freeze({
 });
 
 const WEB_ACTION_ROLES = Object.freeze({
-  dashboard:'viewer', create:'editor', approve:'admin', reject:'admin', threadsAuthStart:'admin',
+  dashboard:'viewer', create:'editor', update:'editor', approve:'admin', reject:'admin', threadsAuthStart:'admin',
   listEmployees:'admin', createEmployee:'admin', setEmployeeActive:'admin', setEmployeeRole:'admin'
 });
 const WEB_ROLE_LEVELS = Object.freeze({viewer:1, editor:2, admin:3});

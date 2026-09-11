@@ -50,6 +50,28 @@ function createPost(input) {
   return {ok: true, count: channels.length, approvalLevel: level, status: initialStatus_(level)};
 }
 
+function updatePostFromWeb_(input, actor) {
+  const id = String(input.id || '');
+  const post = findPost_(id);
+  if (!post) throw new Error('投稿が見つかりません。');
+  if ([APP.STATUS.POSTING, APP.STATUS.POSTED, APP.STATUS.CANCELLED].includes(post['ステータス'])) {
+    throw new Error('この投稿は編集できません。');
+  }
+  input.channels = Array.isArray(input.channels) ? input.channels : [input.channel];
+  if (input.channels.length !== 1) throw new Error('編集時の投稿先は1つだけ選択してください。');
+  validatePostInput_(input);
+  const level = decideApprovalLevel_(input);
+  updatePost_(post._row, {
+    'ブランド':input.brand, '投稿種別':input.type, '投稿本文':input.body.trim(),
+    '画像URL':String(input.imageUrl || '').trim(), '投稿先':input.channels[0],
+    '予約日時':new Date(input.scheduledAt), '承認レベル':level, 'ステータス':APP.STATUS.PENDING,
+    '承認者':'', '承認者UID':'', '承認者権限':'', '承認日時':'', '承認時ハッシュ':'',
+    '承認依頼通知日時':'', '承認催促通知日時':'', '最終エラー':'', '更新日時':now_()
+  });
+  sendApprovalRequestForIds_([id], false);
+  return {ok:true, id:id, approvalLevel:level, status:APP.STATUS.PENDING};
+}
+
 function validatePostInput_(p) {
   if (!p || !BRAND_ROWS.some(r => r[1] === p.brand)) throw new Error('ブランドを選択してください。');
   if (!POST_TYPES.includes(p.type)) throw new Error('投稿種別が不正です。');

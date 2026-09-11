@@ -22,11 +22,11 @@
         <div><h3 id="threadsQrTitle"></h3><p><b>スマホでQRを読むとThreadsのホームだけが開く場合：</b><br>「認証URLをコピー」を押し、SafariまたはChromeのアドレス欄へ貼り付けて開いてください。有効時間は10分です。</p><button id="copyThreadsAuthUrl" type="button">認証URLをコピー</button><a id="threadsAuthLink" class="buttonLink" href="#" target="_blank" rel="noopener">この端末のブラウザで開く</a><button id="regenerateThreadsQr" class="subtle" type="button">QRコードを再発行</button><button id="closeThreadsQr" class="subtle" type="button">閉じる</button></div>
       </div>
     </section>
-    <section class="composer card"><h2>投稿を追加</h2><form id="postForm">
+    <section class="composer card"><h2 id="composerTitle">投稿を追加</h2><form id="postForm"><input type="hidden" name="id">
       <div class="grid"><label>ブランド<select name="brand" required></select></label><label>投稿種別<select name="type" required></select></label><fieldset><legend>投稿先</legend><div id="channels" class="checks"></div></fieldset><label>予約日時<input name="scheduledAt" type="datetime-local" required></label></div>
       <label>投稿本文<textarea name="body" rows="5" required placeholder="投稿本文"></textarea></label><label>画像URL<input name="imageUrl" type="url" placeholder="https://...（Instagramは必須）"></label>
       <div class="approvalNotice"><b>すべての投稿に管理人の最終承認が必要です</b><span>通常投稿も承認されるまで公開されません。承認後に本文・画像・日時・投稿先を変更すると、再承認が必要になります。</span></div>
-      <div class="formFoot"><span>承認レベルは内容の注意度を示します</span><button type="submit">承認待ちに追加</button></div>
+      <div class="formFoot"><span>承認レベルは内容の注意度を示します</span><div><button id="cancelEdit" class="subtle" type="button" hidden>編集をやめる</button> <button id="savePost" type="submit">承認待ちに追加</button></div></div>
     </form></section>
     <nav><button class="tab active" data-view="today">今日の投稿 <b id="todayCount">0</b></button><button class="tab" data-view="pending">承認待ち <b id="pendingCount">0</b></button><button class="tab" data-view="tomorrow">明日の候補 <b id="tomorrowCount">0</b></button><button class="tab" data-view="materials">素材依頼 <b id="materialsCount">0</b></button></nav>
     <section id="list" class="list"></section><section id="errors" class="errors"></section>
@@ -38,4 +38,4 @@
   </div>
 </main>
 <footer class="siteFooter"><a href="privacy.html">プライバシーポリシー</a><a href="terms.html">利用規約</a><a href="data-deletion.html">データ削除</a></footer>
-<div id="toast"></div><script type="module" src="app-v082.js"></script></body></html>
+<div id="toast"></div><script type="module" src="app-v083.js"></script></body></html>

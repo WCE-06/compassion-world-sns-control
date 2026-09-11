@@ -38,6 +38,7 @@ function executeWebApi_(p) {
     switch (p.action) {
       case 'dashboard': data = getDashboardData(); data.session = actor; break;
       case 'create': data = createPost(payload); break;
+      case 'update': data = updatePostFromWeb_(payload, actor); break;
       case 'approve': data = approvePost(payload.id, actor); break;
       case 'reject': data = rejectPost(payload.id, payload.reason || '', actor); break;
       case 'threadsAuthStart': data = startThreadsOAuth_(payload); break;
