@@ -2,6 +2,13 @@ function notificationEmail_() {
   return getProperty_('APPROVAL_NOTIFICATION_EMAIL', true).trim();
 }
 
+// Run once from the Apps Script editor after adding the mail OAuth scope.
+// This requests authorization without sending an email.
+function authorizeMailService() {
+  const remaining = MailApp.getRemainingDailyQuota();
+  Logger.log('メール送信権限を確認しました。残り送信可能数: ' + remaining);
+}
+
 function approvalControlUrl_() {
   return getProperty_('SNS_CONTROL_URL', false) || 'https://wce-06.github.io/compassion-world-sns-control/';
 }
