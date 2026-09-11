@@ -16,7 +16,7 @@ SNS CONTROLはFirebase Authenticationの無料枠で従業員ごとのログイ�
 1. Firebase ConsoleでSpark（無料）プランのプロジェクトを作成します。Google Analyticsは不要です。
 2. Authenticationの「ログイン方法」で「メール／パスワード」を有効にします。
 3. Authenticationの承認済みドメインへ`wce-06.github.io`を追加します。
-4. Webアプリを追加し、表示された設定値を`docs/firebase-config.js`へ転記します。
+4. Webアプリを追加し、表示された設定値を`docs/firebase-config-v081.js`へ転記します。
 5. Authenticationのユーザー画面で、最初の管理人アカウントを1件作成します。
 6. Apps Scriptのスクリプトプロパティへ次を設定します。
 
