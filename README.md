@@ -1,10 +1,10 @@
-# COMPASSION WORLD SNS CONTROL — MVP v0.7
+# COMPASSION WORLD SNS CONTROL — MVP v0.8
 
 Googleスプレッドシートを台帳、GitHub Pagesを管理画面、Google Apps Scriptを投稿処理基盤として使うSNS予約投稿システムです。
 
 HTML/CSS/JavaScriptはGitHubを正本として管理し、GitHub Actionsから既存Apps Scriptへ同期する構成です。初回設定は `GITHUB.md`、SNS認証は `SNS_CONNECTION_GUIDE.md` を参照してください。
 
-従業員ログインはFirebase Authentication、権限検証はFirebase Functionsを使用します。共有接続キーを従業員へ配る旧方式は廃止しました。移行手順は `FIREBASE_AUTH_SETUP.md` を参照してください。
+従業員ログインはFirebase Authenticationの無料枠、権限検証はGoogle Apps Scriptを使用します。Firebase FunctionsやFirestoreは使いません。共有接続キーを従業員へ配る旧方式は廃止しました。移行手順は `FIREBASE_AUTH_SETUP.md` を参照してください。
 
 ## MVPでできること
 
@@ -46,7 +46,7 @@ HTML/CSS/JavaScriptはGitHubを正本として管理し、GitHub Actionsから�
 ## 本番化チェックリスト
 
 - Firebase Authenticationの一般登録を設けず、管理人から従業員を招待
-- Firebase FunctionsとGASの共有秘密鍵をSecret／Script Propertiesへ設定
+- Firebase Web APIキーと最初の管理人メールをGASのScript Propertiesへ設定
 - 使用するブランド×媒体だけAPI認証情報を設定
 - X Developer Consoleで課金上限・残高アラートを設定
 - Metaアプリの必要権限と本番モードを確認
@@ -62,6 +62,7 @@ HTML/CSS/JavaScriptはGitHubを正本として管理し、GitHub Actionsから�
 - Threads: `<接頭辞>_THREADS_USER_ID`, `<接頭辞>_THREADS_ACCESS_TOKEN`
 - 任意: `META_GRAPH_VERSION`（未指定は `v23.0`）、`THREADS_GRAPH_VERSION`（未指定は `v1.0`）
 - 必須安全設定: `DRY_RUN=true|false`
+- 従業員ログイン: `FIREBASE_WEB_API_KEY`, `BOOTSTRAP_ADMIN_EMAIL`
 - 任意（シートから直接承認する旧運用のみ）: `APPROVER_EMAILS`（許可するGoogleアカウント。通常のWeb管理画面ではFirebaseの管理人権限を使用）
 - 必須: `APPROVAL_NOTIFICATION_EMAIL`（承認依頼メールの送信先。公開コードにはメールアドレスを書かない）
 - 任意: `APPROVAL_REMINDER_HOURS`（未指定は予約時刻の3時間前に再通知）

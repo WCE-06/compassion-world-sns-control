@@ -91,10 +91,9 @@ function getThreadsConnectionStatus_() {
 }
 
 function threadsCallbackHtml_(ok, message) {
-  const color = ok ? '#217a55' : '#a33';
   const title = ok ? 'Threads連携完了' : 'Threads連携エラー';
-  const safe = String(message).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  return HtmlService.createHtmlOutput('<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>' + title + '</title></head><body style="font-family:-apple-system,BlinkMacSystemFont,Noto Sans JP,sans-serif;background:#f7f4ee;color:#17223b;margin:0;padding:28px"><main style="max-width:560px;margin:40px auto;background:#fff;border-radius:18px;padding:28px;border:1px solid #e7e1d7"><h1 style="color:' + color + ';font-size:24px">' + title + '</h1><p style="line-height:1.8">' + safe + '</p><p style="color:#6b7280">この画面を閉じて、SNS CONTROLの「状態を更新」を押してください。</p></main></body></html>').setTitle(title);
+  return ContentService.createTextOutput(title + '\n\n' + String(message) + '\n\nこの画面を閉じて、SNS CONTROLの「状態を更新」を押してください。')
+    .setMimeType(ContentService.MimeType.TEXT);
 }
 
 function handleThreadsMetaCallback_(p) {

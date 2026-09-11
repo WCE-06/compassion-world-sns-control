@@ -1,6 +1,6 @@
-import {initializeApp} from 'https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js';
-import {getAuth,onAuthStateChanged,signInWithEmailAndPassword,signOut,sendPasswordResetEmail} from 'https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js';
-import {firebaseConfig,functionsRegion} from './firebase-config.js';
+import {initializeApp,deleteApp} from 'https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js';
+import {getAuth,onAuthStateChanged,signInWithEmailAndPassword,createUserWithEmailAndPassword,updateProfile,deleteUser,signOut,sendPasswordResetEmail} from 'https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js';
+import {firebaseConfig} from './firebase-config.js';
 
 const BRANDS=['COMPASSION WORLD','おもひで商店','Aozora Kitchen','FEBBRAIO','アートリエ','Kazu個人'];
 const TYPES=['通常','イベント','料金改定','Kazu本人名義','攻めた投稿','緊急告知'];
@@ -9,8 +9,9 @@ const ROLE_LABELS={admin:'管理人',editor:'運用スタッフ',viewer:'閲覧�
 const configured=firebaseConfig.apiKey&&firebaseConfig.apiKey!=='REPLACE_ME'&&firebaseConfig.projectId&&firebaseConfig.projectId!=='REPLACE_ME';
 const firebaseApp=configured?initializeApp(firebaseConfig):null;
 const auth=configured?getAuth(firebaseApp):null;
-const API=configured?`https://${functionsRegion}-${firebaseConfig.projectId}.cloudfunctions.net/snsControlApi`:'';
+const API='https://script.google.com/macros/s/AKfycbwKfxQIgiEHbruUR5XXaVx5GToWDOKDORqykYAo9rON-3XaePm06QNajQx5k5vCL7Ga/exec';
 let state={},view='today',currentThreadsBrand='',currentThreadsAuthUrl='',session=null;
+const pendingRequests=new Map();
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
@@ -33,11 +34,16 @@ $('#logout').onclick=()=>signOut(auth);
 async function api(action,payload={}){
   const user=auth.currentUser;if(!user)throw new Error('もう一度ログインしてください。');
   const token=await user.getIdToken();
-  const response=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({action,payload})});
-  const result=await response.json().catch(()=>({ok:false,error:'サーバーの応答を読み取れませんでした。'}));
-  if(!response.ok||!result.ok)throw new Error(result.error||'APIエラー');
-  return result.data;
+  const requestId=crypto.randomUUID(),nonce=crypto.randomUUID(),iframe=document.createElement('iframe'),form=document.createElement('form');
+  iframe.name='cw_api_'+requestId.replaceAll('-','');iframe.hidden=true;form.hidden=true;form.method='post';form.action=API;form.target=iframe.name;
+  const fields={api:'1',action,ts:Date.now().toString(),nonce,idToken:token,payload:b64json(payload),origin:location.origin,requestId};
+  Object.entries(fields).forEach(([name,value])=>{const input=document.createElement('input');input.name=name;input.value=value;form.appendChild(input)});
+  document.body.append(iframe,form);
+  return new Promise((resolve,reject)=>{const timer=setTimeout(()=>finishRequest(requestId,new Error('サーバーへの接続がタイムアウトしました。')),30000);pendingRequests.set(requestId,{resolve,reject,timer,iframe,form});form.submit();setTimeout(()=>pollResult(requestId),500)});
 }
+function b64json(value){const bytes=new TextEncoder().encode(JSON.stringify(value||{}));let s='';bytes.forEach(b=>s+=String.fromCharCode(b));return btoa(s).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')}
+function finishRequest(id,error,result){const request=pendingRequests.get(id);if(!request)return;clearTimeout(request.timer);request.form.remove();request.iframe.remove();pendingRequests.delete(id);error?request.reject(error):request.resolve(result)}
+function pollResult(requestId){if(!pendingRequests.has(requestId))return;const callback='cw_result_'+requestId.replaceAll('-',''),script=document.createElement('script');const cleanup=()=>{delete window[callback];script.remove()};window[callback]=result=>{cleanup();if(result.pending){setTimeout(()=>pollResult(requestId),600);return}result.ok?finishRequest(requestId,null,result.data):finishRequest(requestId,new Error(result.error||'APIエラー'))};script.onerror=()=>{cleanup();setTimeout(()=>pollResult(requestId),1000)};script.src=API+'?'+new URLSearchParams({apiResult:'1',requestId,callback});document.head.appendChild(script)}
 
 async function connect(){
   state=await api('dashboard');session=state.session;
@@ -67,8 +73,9 @@ window.rejectPost=async id=>{const reason=prompt('差戻し理由');if(reason===
 async function loadStaff(){const result=await api('listEmployees');renderStaff(result.employees||[])}
 function renderStaff(items){$('#staffList').innerHTML=items.map(item=>`<article class="staffRow"><div><b>${esc(item.name||'名称未設定')}</b><br><small>${item.active?'利用中':'停止中'}</small></div><div>${esc(item.email)}</div><select aria-label="${esc(item.name)}の権限" onchange="window.setEmployeeRole('${esc(item.uid)}',this.value)" ${item.uid===session.uid?'disabled':''}>${Object.entries(ROLE_LABELS).map(([value,label])=>`<option value="${value}" ${item.role===value?'selected':''}>${label}</option>`).join('')}</select>${item.uid===session.uid?'':`<button class="${item.active?'danger':'subtle'}" onclick="window.setEmployeeActive('${esc(item.uid)}',${!item.active})">${item.active?'停止':'再開'}</button>`}</article>`).join('')||'<div class="empty">登録済み従業員はいません</div>'}
 $('#refreshStaff').onclick=loadStaff;
-$('#staffForm').addEventListener('submit',async e=>{e.preventDefault();const input=Object.fromEntries(new FormData(e.target));if(input.role==='admin'&&!confirm('この従業員を管理人として登録しますか？ 管理人は投稿承認・SNS連携・従業員管理を行えます。'))return;try{await api('createEmployee',input);await sendPasswordResetEmail(auth,input.email);toast('従業員を登録し、パスワード設定メールを送信しました');e.target.reset();await loadStaff()}catch(err){fail(err)}});
+$('#staffForm').addEventListener('submit',async e=>{e.preventDefault();const input=Object.fromEntries(new FormData(e.target));if(input.role==='admin'&&!confirm('この従業員を管理人として登録しますか？ 管理人は投稿承認・SNS連携・従業員管理を行えます。'))return;let secondaryApp,employeeUser,registered=false;try{secondaryApp=initializeApp(firebaseConfig,'employee-'+crypto.randomUUID());const employeeAuth=getAuth(secondaryApp);const credential=await createUserWithEmailAndPassword(employeeAuth,input.email,temporaryPassword());employeeUser=credential.user;await updateProfile(employeeUser,{displayName:input.name});input.employeeToken=await employeeUser.getIdToken(true);await api('createEmployee',input);registered=true;await signOut(employeeAuth);try{await sendPasswordResetEmail(auth,input.email);toast('従業員を登録し、パスワード設定メールを送信しました')}catch(_){toast('登録しました。パスワード再設定メールはログイン画面から再送してください')}e.target.reset();await loadStaff()}catch(err){if(employeeUser&&!registered)try{await deleteUser(employeeUser)}catch(_){}fail(err)}finally{if(secondaryApp)await deleteApp(secondaryApp)}});
 window.setEmployeeActive=async(uid,active)=>{if(!confirm(active?'この従業員の利用を再開しますか？':'この従業員を利用停止しますか？'))return;try{await api('setEmployeeActive',{uid,active});toast(active?'利用を再開しました':'利用を停止しました');await loadStaff()}catch(e){fail(e)}};
 window.setEmployeeRole=async(uid,role)=>{if(!confirm(`この従業員の権限を「${ROLE_LABELS[role]}」へ変更しますか？`)){await loadStaff();return}try{await api('setEmployeeRole',{uid,role});toast('権限を変更しました');await loadStaff()}catch(e){fail(e);await loadStaff()}};
 function toast(s){const t=$('#toast');t.textContent=s;t.style.display='block';setTimeout(()=>t.style.display='none',3000)}
 function fail(e){toast(e.message||String(e))}
+function temporaryPassword(){const bytes=crypto.getRandomValues(new Uint8Array(24));return Array.from(bytes,b=>String.fromCharCode(33+(b%90))).join('')+'Aa1!'}

@@ -1,43 +1,34 @@
-# 従業員ログイン設定
+# 従業員ログイン設定（無料構成）
 
-SNS CONTROLは共有接続キーを従業員へ配らず、Firebase Authenticationで従業員ごとにログインします。
+SNS CONTROLはFirebase Authenticationの無料枠で従業員ごとのログインを行い、認証確認・権限管理・投稿処理は既存のGoogle Apps Scriptで行います。Firebase Functions、Firestore、Firebase Hostingは使用せず、請求先登録も不要です。
 
 ## 構成
 
-`GitHub Pages → Firebase Authentication → Firebase Functions → GAS → Googleスプレッドシート / SNS API`
+`GitHub Pages → Firebase Authentication（ログインのみ）→ GAS → Googleスプレッドシート / SNS API`
 
 - パスワードはFirebaseだけが管理し、GASやスプレッドシートには保存しません。
-- Firebase Functionsがログイン本人と権限を確認します。
-- GASへ渡す共有秘密鍵はFirebase FunctionsのSecretにのみ保存します。
+- GASはFirebase公式REST APIへIDトークンを照会し、ログイン本人を確認します。
+- GASはスプレッドシートの従業員台帳を使って権限を確認します。
 - 管理人、運用スタッフ、閲覧スタッフの3権限があります。
 
 ## 初回設定
 
-1. Firebase Consoleでプロジェクトを作成します。
-   - Functionsの利用には従量課金のBlazeプランと請求先登録が必要です。通常規模では無償枠内が見込まれますが、予算アラートと利用上限を必ず設定してください。
-2. Authenticationのログイン方法で「メール／パスワード」を有効にします。
-   - Authenticationの承認済みドメインへ`wce-06.github.io`を追加します。
-3. Firestoreデータベースを作成します。本番モードを選択します。
+1. Firebase ConsoleでSpark（無料）プランのプロジェクトを作成します。Google Analyticsは不要です。
+2. Authenticationの「ログイン方法」で「メール／パスワード」を有効にします。
+3. Authenticationの承認済みドメインへ`wce-06.github.io`を追加します。
 4. Webアプリを追加し、表示された設定値を`docs/firebase-config.js`へ転記します。
 5. Authenticationのユーザー画面で、最初の管理人アカウントを1件作成します。
-6. `.firebaserc.example`を`.firebaserc`としてコピーし、FirebaseプロジェクトIDを設定します。
-7. Functions用Secretを設定します。
+6. Apps Scriptのスクリプトプロパティへ次を設定します。
 
 ```text
-firebase functions:secrets:set GAS_WEB_APP_URL
-firebase functions:secrets:set WEB_API_SECRET
-firebase functions:secrets:set BOOTSTRAP_ADMIN_EMAIL
+FIREBASE_WEB_API_KEY=Webアプリ設定に表示されたapiKey
+BOOTSTRAP_ADMIN_EMAIL=手順5で作った管理人メールアドレス
 ```
 
-- `GAS_WEB_APP_URL`: 公開中のGAS Web App URL
-- `WEB_API_SECRET`: GAS Script Propertiesの同名値
-- `BOOTSTRAP_ADMIN_EMAIL`: 手順5で作った最初の管理人メールアドレス
-
-8. `firebase deploy --only functions,firestore:rules`を実行します。
-   - ゲートウェイは常時起動を行わず、最大2インスタンスに制限しています。
-9. Apps Scriptを新バージョンでデプロイします。GASの入口は外部サーバーから到達できる公開設定ですが、署名が一致しない操作は拒否されます。
-10. GitHubへpushし、GitHub Pagesを更新します。
-11. 最初の管理人でログインします。初回ログイン時だけ自動的に管理人権限が作成されます。
+7. Apps Scriptで`setupSystem`を一度実行し、「従業員」「監査ログ」シートを作ります。
+8. Apps Scriptを新バージョンでデプロイします。実行ユーザーは自分、アクセスできるユーザーは全員です。GAS側はFirebaseログインと従業員権限の両方を確認します。
+9. GitHubへpushし、GitHub Pagesを更新します。
+10. 最初の管理人でログインします。初回ログイン時だけ管理人として従業員台帳へ登録されます。
 
 ## 権限
 
@@ -47,11 +38,11 @@ firebase functions:secrets:set BOOTSTRAP_ADMIN_EMAIL
 | 運用スタッフ | ○ | ○ | × | × | × |
 | 閲覧スタッフ | ○ | × | × | × | × |
 
-従業員の新規登録は管理画面から管理人だけが行います。一般向けの登録画面はありません。
+従業員の新規登録は管理画面から管理人だけが行います。一般向けの登録画面はありません。利用停止にすると、FirebaseへログインできてもSNS CONTROLのデータや操作にはアクセスできません。
 
-## 移行完了後
+## 費用
 
-- 従業員へ旧`WEB_API_SECRET`を知らせないでください。
-- ブラウザに保存されている旧接続キーは使用されません。
-- Firebaseのメール列挙保護とパスワードポリシーを有効にしてください。
-- 最初の管理人以外は、SNS CONTROLの従業員管理画面から招待してください。
+- Firebase Authenticationのメール／パスワード認証はSparkプランの無料枠を使用します。
+- Firebase Functions、Firestore、Firebase Hostingは使用しません。
+- GitHub Pages、GAS、Googleスプレッドシートはそれぞれの無料利用枠内で運用します。
+- X APIなど、SNS側で別途発生するAPI料金はこの構成変更の対象外です。

@@ -178,6 +178,7 @@ function setupSystem() {
   createSheet_(ss, APP.SHEETS.MATERIALS, ['依頼ID','ブランド','必要日','素材種別','依頼内容','担当','ステータス','素材URL','作成日時']);
   createSheet_(ss, APP.SHEETS.SETTINGS, ['キー','値','説明']);
   createSheet_(ss, APP.SHEETS.AUDIT, ['監査ID','日時','ユーザーID','メールアドレス','氏名','権限','操作','対象ID','結果','詳細']);
+  createSheet_(ss, APP.SHEETS.STAFF, ['ユーザーID','メールアドレス','氏名','権限','有効','作成日時','作成者','更新日時','更新者']);
   seedBrands_();
   seedSettings_();
   applyValidations_();

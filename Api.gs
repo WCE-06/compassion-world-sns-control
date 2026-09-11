@@ -1,17 +1,16 @@
 function doGet(e) {
   if (e && e.parameter && (e.parameter.code || e.parameter.error) && e.parameter.state) return handleThreadsOAuthCallback_(e.parameter);
-  if (e && e.parameter && e.parameter.api === '1') return handleWebApi_(e.parameter);
-  return HtmlService.createTemplateFromFile('Index').evaluate()
-    .setTitle(APP.NAME).addMetaTag('viewport', 'width=device-width, initial-scale=1');
+  if (e && e.parameter && e.parameter.apiResult === '1') return handleWebApiResult_(e.parameter);
+  return ContentService.createTextOutput('COMPASSION WORLD SNS CONTROL: https://wce-06.github.io/compassion-world-sns-control/')
+    .setMimeType(ContentService.MimeType.TEXT);
 }
 
 function doPost(e) {
+  if (e && e.parameter && e.parameter.api === '1') return handleWebApiPost_(e.parameter);
   if (e && e.parameter && e.parameter.meta_callback) return handleThreadsMetaCallback_(e.parameter);
   return ContentService.createTextOutput(JSON.stringify({ok:false,error:'unsupported'}))
     .setMimeType(ContentService.MimeType.JSON);
 }
-
-function include_(name) { return HtmlService.createHtmlOutputFromFile(name).getContent(); }
 
 function getDashboardData() {
   const today = Utilities.formatDate(now_(), APP.TZ, 'yyyy-MM-dd');
