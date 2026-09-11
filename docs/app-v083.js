@@ -53,6 +53,13 @@ async function api(action,payload={}){
 }
 function b64json(value){const bytes=new TextEncoder().encode(JSON.stringify(value||{}));let s='';bytes.forEach(b=>s+=String.fromCharCode(b));return btoa(s).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')}
 function finishRequest(id,error,result){const request=pendingRequests.get(id);if(!request)return;clearTimeout(request.timer);request.form.remove();request.iframe.remove();pendingRequests.delete(id);error?request.reject(error):request.resolve(result)}
+window.addEventListener('message',event=>{
+  if(!/^https:\/\/(script\.google\.com|[^/]+\.googleusercontent\.com)$/.test(event.origin))return;
+  const message=event.data;
+  if(!message||message.type!=='cw_api_result'||!pendingRequests.has(message.requestId))return;
+  const result=message.result||{};
+  result.ok?finishRequest(message.requestId,null,result.data):finishRequest(message.requestId,new Error(result.error||'APIエラー'));
+});
 function pollResult(requestId){if(!pendingRequests.has(requestId))return;const callback='cw_result_'+requestId.replaceAll('-',''),script=document.createElement('script');const cleanup=()=>{delete window[callback];script.remove()};window[callback]=result=>{cleanup();if(result.pending){setTimeout(()=>pollResult(requestId),600);return}result.ok?finishRequest(requestId,null,result.data):finishRequest(requestId,new Error(result.error||'APIエラー'))};script.onerror=()=>{cleanup();setTimeout(()=>pollResult(requestId),1000)};script.src=API+'?'+new URLSearchParams({apiResult:'1',requestId,callback});document.head.appendChild(script)}
 
 async function connect(){

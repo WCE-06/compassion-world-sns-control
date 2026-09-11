@@ -7,8 +7,11 @@ function handleWebApiPost_(p) {
   if (!/^[0-9a-f-]{16,80}$/i.test(requestId)) throw new Error('リクエスト情報が不正です。');
   const result = executeWebApi_(p);
   CacheService.getScriptCache().put('api_result_' + requestId, JSON.stringify(result), 60);
-  return ContentService.createTextOutput(JSON.stringify({accepted:true, requestId:requestId}))
-    .setMimeType(ContentService.MimeType.JSON);
+  const message = JSON.stringify({type:'cw_api_result', requestId:requestId, result:result}).replace(/</g, '\\u003c');
+  const targetOrigin = JSON.stringify(origin);
+  return HtmlService.createHtmlOutput(
+    '<!doctype html><meta charset="utf-8"><script>parent.postMessage(' + message + ',' + targetOrigin + ');<\/script>'
+  );
 }
 
 function handleWebApiResult_(p) {
