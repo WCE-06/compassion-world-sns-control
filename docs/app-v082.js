@@ -15,13 +15,14 @@ const pendingRequests=new Map();
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
-document.addEventListener('DOMContentLoaded',()=>{
+function initializeUi(){
   fill('brand',BRANDS);fill('type',TYPES);
   $('#channels').innerHTML=CHANNELS.map((v,i)=>`<label><input type="checkbox" name="channels" value="${v}" ${i?'':'checked'}>${v}</label>`).join('');
   const d=new Date(Date.now()+3600000);d.setMinutes(0,0,0);$('[name=scheduledAt]').value=localDate(d);
   if(!configured){$('#firebaseNotice').hidden=false;$('#mode').textContent='設定待ち';return;}
   onAuthStateChanged(auth,async user=>{if(!user)return showLogin();try{await connect()}catch(e){showLogin();fail(e)}});
-});
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',initializeUi);else initializeUi();
 
 function fill(n,v){$(`[name=${n}]`).innerHTML=v.map(x=>`<option>${esc(x)}</option>`).join('')}
 function localDate(d){const z=n=>String(n).padStart(2,'0');return `${d.getFullYear()}-${z(d.getMonth()+1)}-${z(d.getDate())}T${z(d.getHours())}:${z(d.getMinutes())}`}
