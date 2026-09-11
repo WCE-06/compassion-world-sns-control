@@ -1,6 +1,14 @@
-import {initializeApp,deleteApp} from 'https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js';
-import {getAuth,onAuthStateChanged,signInWithEmailAndPassword,createUserWithEmailAndPassword,updateProfile,deleteUser,signOut,sendPasswordResetEmail} from 'https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js';
-import {firebaseConfig} from './firebase-config-v081.js';
+const firebaseConfig=window.FIREBASE_CONFIG||{};
+const initializeApp=(config,name)=>firebase.initializeApp(config,name);
+const deleteApp=app=>app.delete();
+const getAuth=app=>app.auth();
+const onAuthStateChanged=(auth,callback)=>auth.onAuthStateChanged(callback);
+const signInWithEmailAndPassword=(auth,email,password)=>auth.signInWithEmailAndPassword(email,password);
+const createUserWithEmailAndPassword=(auth,email,password)=>auth.createUserWithEmailAndPassword(email,password);
+const updateProfile=(user,profile)=>user.updateProfile(profile);
+const deleteUser=user=>user.delete();
+const signOut=auth=>auth.signOut();
+const sendPasswordResetEmail=(auth,email)=>auth.sendPasswordResetEmail(email);
 
 const BRANDS=['COMPASSION WORLD','おもひで商店','Aozora Kitchen','FEBBRAIO','アートリエ','Kazu個人'];
 const TYPES=['通常','イベント','料金改定','Kazu本人名義','攻めた投稿','緊急告知'];
@@ -20,6 +28,7 @@ function initializeUi(){
   $('#channels').innerHTML=CHANNELS.map((v,i)=>`<label><input type="checkbox" name="channels" value="${v}" ${i?'':'checked'}>${v}</label>`).join('');
   const d=new Date(Date.now()+3600000);d.setMinutes(0,0,0);$('[name=scheduledAt]').value=localDate(d);
   if(!configured){$('#firebaseNotice').hidden=false;$('#mode').textContent='設定待ち';return;}
+  $('#loginButton').disabled=false;$('#loginButton').textContent='ログイン';
   onAuthStateChanged(auth,async user=>{if(!user)return showLogin();try{await connect()}catch(e){showLogin();fail(e)}});
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',initializeUi);else initializeUi();
