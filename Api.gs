@@ -6,11 +6,46 @@ function doGet(e) {
 }
 
 function doPost(e) {
+  if (e && e.postData && e.postData.contents && String(e.postData.type || '').indexOf('application/json') === 0) {
+    return handleInboundApi_(e.postData.contents);
+  }
   if (e && e.parameter && e.parameter.api === '1') return handleWebApiPost_(e.parameter);
   if (e && e.parameter && e.parameter.meta_callback) return handleThreadsMetaCallback_(e.parameter);
   return ContentService.createTextOutput(JSON.stringify({ok:false,error:'unsupported'}))
     .setMimeType(ContentService.MimeType.JSON);
 }
+
+function handleInboundApi_(raw) {
+  try {
+    const request = JSON.parse(String(raw || '{}'));
+    const providedHash = sha256Text_(String(request.apiKey || ''));
+    if (!secureEqual_(providedHash, INBOUND_API_KEY_SHA256)) return jsonOutput_({ok:false,error:'UNAUTHORIZED'});
+    if (request.action !== 'importDraft') return jsonOutput_({ok:false,error:'UNSUPPORTED_ACTION'}, 400);
+    const data = importExternalDraft_(request.data || {});
+    return jsonOutput_({ok:true,data:data});
+  } catch (error) {
+    return jsonOutput_({ok:false,error:error && error.message ? error.message : String(error)}, 400);
+  }
+}
+
+function importExternalDraft_(input) {
+  const sourceId = String(input.sourceId || '').trim();
+  if (!/^[0-9A-Za-z_-]{8,120}$/.test(sourceId)) throw new Error('SOURCE_ID_INVALID');
+  const lockKey = 'MEMBER_ADMIN:' + sourceId;
+  const existing = readObjects_(APP.SHEETS.POSTS).filter(row => String(row['ロックキー'] || '') === lockKey);
+  if (existing.length) return {imported:false,idempotent:true,postIds:existing.map(row => row['投稿ID'])};
+  const payload = {brand:String(input.brand || 'COMPASSION WORLD'),type:String(input.type || '通常'),body:String(input.body || ''),imageUrl:String(input.imageUrl || ''),scheduledAt:String(input.scheduledAt || ''),channels:Array.isArray(input.channels) ? input.channels : [],_actor:{email:String(input.actor || 'member-admin'),name:'会員管理SNS連携',uid:'member-admin',role:'editor'}};
+  validatePostInput_(payload);
+  const level = decideApprovalLevel_(payload),now=now_(),groupId=uuid_(),createdIds=[];
+  payload.channels.forEach(channel => {const row={'投稿ID':groupId+'-'+channel.toLowerCase(),'ブランド':payload.brand,'投稿種別':payload.type,'投稿本文':payload.body.trim(),'画像URL':payload.imageUrl.trim(),'投稿先':channel,'予約日時':new Date(payload.scheduledAt),'承認レベル':level,'ステータス':APP.STATUS.PENDING,'作成者':payload._actor.email,'作成日時':now,'更新日時':now,'試行回数':0,'ロックキー':lockKey};appendObject_(APP.SHEETS.POSTS,row);createdIds.push(row['投稿ID']);});
+  sendApprovalRequestForIds_(createdIds,false);
+  appendWebAudit_(payload._actor,'importDraft',{id:sourceId},'成功','会員管理から受信');
+  return {imported:true,idempotent:false,postIds:createdIds,approvalLevel:level,status:APP.STATUS.PENDING};
+}
+
+function secureEqual_(left,right){if(!left||left.length!==right.length)return false;let diff=0;for(let i=0;i<left.length;i++)diff|=left.charCodeAt(i)^right.charCodeAt(i);return diff===0;}
+function sha256Text_(value){return Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256,value,Utilities.Charset.UTF_8).map(b=>('0'+((b+256)%256).toString(16)).slice(-2)).join('');}
+function jsonOutput_(value){return ContentService.createTextOutput(JSON.stringify(value)).setMimeType(ContentService.MimeType.JSON);}
 
 function getDashboardData() {
   const today = Utilities.formatDate(now_(), APP.TZ, 'yyyy-MM-dd');
