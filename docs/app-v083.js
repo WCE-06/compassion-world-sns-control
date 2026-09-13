@@ -51,7 +51,7 @@ async function api(action,payload={}){
   const fields={api:'1',action,ts:Date.now().toString(),nonce,idToken:token,payload:b64json(payload),origin:location.origin,requestId};
   Object.entries(fields).forEach(([name,value])=>{const input=document.createElement('input');input.name=name;input.value=value;form.appendChild(input)});
   document.body.append(iframe,form);
-  return new Promise((resolve,reject)=>{const timer=setTimeout(()=>finishRequest(requestId,new Error('サーバーへの接続がタイムアウトしました。')),30000);pendingRequests.set(requestId,{resolve,reject,timer,iframe,form});form.submit();setTimeout(()=>pollResult(requestId),500)});
+  return new Promise((resolve,reject)=>{const timer=setTimeout(()=>finishRequest(requestId,new Error('サーバーへの接続がタイムアウトしました。SafariまたはChromeで再読み込みしてください。')),60000);pendingRequests.set(requestId,{resolve,reject,timer,iframe,form});const body=new URLSearchParams(fields);fetch(API,{method:'POST',mode:'no-cors',credentials:'omit',headers:{'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},body:body.toString()}).catch(()=>form.submit());setTimeout(()=>pollResult(requestId),700)});
 }
 function b64json(value){const bytes=new TextEncoder().encode(JSON.stringify(value||{}));let s='';bytes.forEach(b=>s+=String.fromCharCode(b));return btoa(s).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')}
 function finishRequest(id,error,result){const request=pendingRequests.get(id);if(!request)return;clearTimeout(request.timer);request.form.remove();request.iframe.remove();pendingRequests.delete(id);error?request.reject(error):request.resolve(result)}
