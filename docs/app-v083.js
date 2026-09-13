@@ -28,16 +28,17 @@ function initializeUi(){
   $('#channels').innerHTML=CHANNELS.map((v,i)=>`<label><input type="checkbox" name="channels" value="${v}" ${i?'':'checked'}>${v}</label>`).join('');
   const d=new Date(Date.now()+3600000);d.setMinutes(0,0,0);$('[name=scheduledAt]').value=localDate(d);
   if(!configured){$('#firebaseNotice').hidden=false;$('#mode').textContent='設定待ち';return;}
-  $('#loginButton').disabled=false;$('#loginButton').textContent='ログイン';
+  window.SNS_CONTROL_READY=true;setLoginBusy(false);
   onAuthStateChanged(auth,async user=>{if(!user)return showLogin();try{await connect()}catch(e){showLogin();fail(e)}});
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',initializeUi);else initializeUi();
 
 function fill(n,v){$(`[name=${n}]`).innerHTML=v.map(x=>`<option>${esc(x)}</option>`).join('')}
 function localDate(d){const z=n=>String(n).padStart(2,'0');return `${d.getFullYear()}-${z(d.getMonth()+1)}-${z(d.getDate())}T${z(d.getHours())}:${z(d.getMinutes())}`}
-function showLogin(){$('#login').hidden=false;$('#app').hidden=true;$('#mode').textContent='ログアウト'}
+function setLoginBusy(busy,label){const button=$('#loginButton');button.disabled=busy;button.textContent=label||(busy?'ログイン中…':'ログイン')}
+function showLogin(){$('#login').hidden=false;$('#app').hidden=true;$('#mode').textContent='ログアウト';setLoginBusy(false)}
 
-$('#loginForm').addEventListener('submit',async e=>{e.preventDefault();if(!configured)return;const fd=new FormData(e.target);try{await signInWithEmailAndPassword(auth,String(fd.get('email')).trim(),String(fd.get('password')))}catch(_){fail(new Error('メールアドレスまたはパスワードを確認してください。'))}});
+$('#loginForm').addEventListener('submit',async e=>{e.preventDefault();if(!configured)return;const fd=new FormData(e.target);setLoginBusy(true);$('#firebaseNotice').hidden=true;try{await signInWithEmailAndPassword(auth,String(fd.get('email')).trim(),String(fd.get('password')));setLoginBusy(true,'管理画面を読み込み中…')}catch(err){setLoginBusy(false);const code=String(err&&err.code||'');const message=code.includes('invalid-credential')||code.includes('wrong-password')||code.includes('user-not-found')?'メールアドレスまたはパスワードを確認してください。':code.includes('network-request-failed')?'通信できませんでした。SafariまたはChromeで開き直してください。':'ログイン処理に失敗しました。もう一度お試しください。';fail(new Error(message))}});
 $('#resetPassword').onclick=async()=>{if(!configured)return;const email=$('#loginForm [name=email]').value.trim();if(!email)return toast('先にメールアドレスを入力してください');try{await sendPasswordResetEmail(auth,email);toast('パスワード再設定メールを送信しました')}catch(_){toast('入力内容を確認してください')}};
 $('#logout').onclick=()=>signOut(auth);
 

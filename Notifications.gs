@@ -10,7 +10,9 @@ function authorizeMailService() {
 }
 
 function approvalControlUrl_() {
-  return getProperty_('SNS_CONTROL_URL', false) || 'https://wce-06.github.io/compassion-world-sns-control/';
+  const configured = getProperty_('SNS_CONTROL_URL', false) || 'https://wce-06.github.io/compassion-world-sns-control/';
+  const base = configured.split('#')[0].split('?')[0];
+  return base + '?v=login-20260913';
 }
 
 function sendApprovalRequestForIds_(postIds, reminder) {
@@ -47,6 +49,7 @@ function sendApprovalRequestForIds_(postIds, reminder) {
       '<div style="white-space:pre-wrap;padding:16px;background:#f7f4ee;border-radius:10px">' + htmlEscape_(first['投稿本文']) + '</div>' +
       (first['画像URL'] ? '<p><a href="' + htmlEscape_(first['画像URL']) + '">使用画像を確認</a></p>' : '<p>画像なし</p>') +
       '<p><a href="' + htmlEscape_(approvalControlUrl_()) + '" style="display:inline-block;padding:12px 18px;border-radius:9px;background:#ec6b4e;color:#fff;text-decoration:none;font-weight:bold">SNS CONTROLで確認する</a></p>' +
+      '<p style="font-size:12px;color:#6b7280">スマートフォンでは、Gmailなどのアプリ内画面ではなくSafariまたはChromeで開いてください。</p>' +
       '<p style="font-size:12px;color:#6b7280">管理画面で最終承認されるまで、この投稿は公開されません。</p></div>';
     MailApp.sendEmail({to:notificationEmail_(), subject:subject, body:body, htmlBody:html, name:APP.NAME});
     const field = reminder ? '承認催促通知日時' : '承認依頼通知日時';
