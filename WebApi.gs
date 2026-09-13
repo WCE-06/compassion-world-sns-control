@@ -59,6 +59,30 @@ function executeWebApi_(p) {
   }
 }
 
+function mobileDashboard(idToken) {
+  const actor = requireFirebaseActor_('dashboard', idToken);
+  const data = getDashboardData();
+  data.session = actor;
+  return data;
+}
+
+function mobileCreatePost(input, idToken) {
+  const actor = requireFirebaseActor_('create', idToken);
+  input = input || {};
+  input._actor = actor;
+  return createPost(input);
+}
+
+function mobileApprovePost(id, idToken) {
+  const actor = requireFirebaseActor_('approve', idToken);
+  return approvePost(id, actor);
+}
+
+function mobileRejectPost(id, reason, idToken) {
+  const actor = requireFirebaseActor_('reject', idToken);
+  return rejectPost(id, reason || '', actor);
+}
+
 function appendWebAudit_(actor, action, payload, result, detail) {
   try {
     appendObject_(APP.SHEETS.AUDIT, {

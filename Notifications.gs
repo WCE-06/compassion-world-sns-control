@@ -10,9 +10,7 @@ function authorizeMailService() {
 }
 
 function approvalControlUrl_() {
-  const configured = getProperty_('SNS_CONTROL_URL', false) || 'https://wce-06.github.io/compassion-world-sns-control/';
-  const base = configured.split('#')[0].split('?')[0];
-  return base + '?v=mobile-api-20260913';
+  return 'https://script.google.com/macros/s/AKfycbwKfxQIgiEHbruUR5XXaVx5GToWDOKDORqykYAo9rON-3XaePm06QNajQx5k5vCL7Ga/exec?mobile=1';
 }
 
 function sendApprovalRequestForIds_(postIds, reminder) {

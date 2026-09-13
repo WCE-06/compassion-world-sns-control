@@ -1,18 +1,111 @@
 <script>
+const FIREBASE_CONFIG={apiKey:'AIzaSyBtmzG_E7GCKjmEEN46BpbLhhNb9wM7YlY',authDomain:'compassion-world-sns-control.firebaseapp.com',projectId:'compassion-world-sns-control',appId:'1:992623651690:web:b0e8589b6de8facf445313'};
 const BRANDS=['COMPASSION WORLD','おもひで商店','Aozora Kitchen','FEBBRAIO','アートリエ','Kazu個人'];
 const TYPES=['通常','イベント','料金改定','Kazu本人名義','攻めた投稿','緊急告知'];
-const CHANNELS=['Instagram','Threads','X']; let state={},view='today';
-document.addEventListener('DOMContentLoaded',()=>{fill('brand',BRANDS);fill('type',TYPES);document.getElementById('channels').innerHTML=CHANNELS.map((v,i)=>`<label><input type="checkbox" name="channels" value="${v}" ${i===0?'checked':''}>${v}</label>`).join('');const d=new Date(Date.now()+3600000);d.setMinutes(0,0,0);document.querySelector('[name=scheduledAt]').value=localDate(d);load();});
+const CHANNELS=['Instagram','Threads','X'];
+const ROLE_LABELS={admin:'管理人',editor:'編集者',viewer:'閲覧者'};
+let state={},view='today',currentUser=null,currentRole='viewer',loading=false;
+
+document.addEventListener('DOMContentLoaded',init);
+
+function init(){
+  fill('brand',BRANDS); fill('type',TYPES);
+  document.getElementById('channels').innerHTML=CHANNELS.map((v,i)=>`<label><input type="checkbox" name="channels" value="${v}" ${i===0?'checked':''}>${v}</label>`).join('');
+  const d=new Date(Date.now()+3600000); d.setMinutes(0,0,0);
+  document.querySelector('[name=scheduledAt]').value=localDate(d);
+  document.getElementById('showPassword').addEventListener('change',e=>document.getElementById('password').type=e.target.checked?'text':'password');
+  document.getElementById('loginForm').addEventListener('submit',login);
+  document.getElementById('resetPassword').addEventListener('click',resetPassword);
+  document.getElementById('logout').addEventListener('click',()=>firebase.auth().signOut());
+  document.querySelector('nav').addEventListener('click',e=>{const b=e.target.closest('.tab');if(b){view=b.dataset.view;render()}});
+  document.getElementById('postForm').addEventListener('submit',createPost);
+  try { firebase.initializeApp(FIREBASE_CONFIG); }
+  catch(e){ return showLogin('ログイン機能を読み込めませんでした。ページを再読み込みしてください。'); }
+  firebase.auth().onAuthStateChanged(async user=>{
+    currentUser=user;
+    if(!user){state={};showLogin();return;}
+    showAppLoading();
+    await loadDashboard();
+  });
+}
+
+async function login(e){
+  e.preventDefault(); if(loading)return;
+  const fd=new FormData(e.target),button=document.getElementById('loginButton');
+  setBusy(button,true,'確認中…');
+  try{await firebase.auth().signInWithEmailAndPassword(String(fd.get('email')).trim(),String(fd.get('password')))}
+  catch(err){showLogin(authMessage(err))}
+  finally{setBusy(button,false,'ログイン')}
+}
+
+async function resetPassword(){
+  const email=String(document.querySelector('#loginForm [name=email]').value||'').trim();
+  if(!email)return toast('先にメールアドレスを入力してください');
+  try{await firebase.auth().sendPasswordResetEmail(email);toast('パスワード再設定メールを送りました')}
+  catch(err){toast(authMessage(err))}
+}
+
+async function token(){
+  if(!currentUser)throw new Error('ログインが必要です。');
+  return currentUser.getIdToken(true);
+}
+
+function gas(method,args){
+  return new Promise((resolve,reject)=>{
+    let runner=google.script.run.withSuccessHandler(resolve).withFailureHandler(e=>reject(new Error(e&&e.message?e.message:String(e))));
+    runner[method](...args);
+  });
+}
+
+async function loadDashboard(){
+  try{
+    const idToken=await token(); state=await gas('mobileDashboard',[idToken]);
+    currentRole=state.session&&state.session.role||'viewer';
+    document.getElementById('currentUser').textContent=(state.session&&state.session.name)||currentUser.email;
+    document.getElementById('currentRole').textContent=ROLE_LABELS[currentRole]||currentRole;
+    document.getElementById('mode').textContent=state.dryRun?'DRY RUN（実投稿なし）':'LIVE';
+    document.getElementById('login').hidden=true; document.getElementById('app').hidden=false;
+    document.querySelector('.composer').hidden=currentRole==='viewer';
+    renderHealth(); render();
+  }catch(err){
+    const message=err.message||String(err);
+    if(/認証|ログイン|トークン|ユーザー登録/.test(message)){await firebase.auth().signOut();showLogin(message)}
+    else{document.getElementById('mode').textContent='接続エラー';toast(message)}
+  }
+}
+
+async function createPost(e){
+  e.preventDefault(); const fd=new FormData(e.target),input=Object.fromEntries(fd); input.channels=fd.getAll('channels');
+  if(!input.channels.length)return toast('投稿先を選択してください');
+  const button=e.submitter||e.target.querySelector('[type=submit]'); setBusy(button,true,'追加中…');
+  try{const r=await gas('mobileCreatePost',[input,await token()]);toast(`${r.count}件を${r.status}（${r.approvalLevel}）で追加しました`);e.target.body.value='';await loadDashboard()}
+  catch(err){toast(err.message||String(err))}finally{setBusy(button,false,'承認待ちに追加')}
+}
+
+async function approve(id){
+  if(!confirm('この内容を承認しますか？\n現在はDRY RUNのため実際のSNSには投稿されません。'))return;
+  try{await gas('mobileApprovePost',[id,await token()]);toast('承認しました');await loadDashboard()}catch(err){toast(err.message||String(err))}
+}
+
+async function rejectPost(id){
+  const reason=prompt('差戻し理由');if(reason===null)return;
+  try{await gas('mobileRejectPost',[id,reason,await token()]);toast('差戻しました');await loadDashboard()}catch(err){toast(err.message||String(err))}
+}
+
+function showLogin(message){
+  document.getElementById('app').hidden=true;document.getElementById('login').hidden=false;document.getElementById('mode').textContent='ログイン待ち';
+  if(message)toast(message);
+}
+function showAppLoading(){document.getElementById('login').hidden=true;document.getElementById('app').hidden=false;document.getElementById('mode').textContent='読み込み中…';document.getElementById('list').innerHTML='<div class="empty">管理画面を読み込んでいます…</div>'}
 function fill(name,values){document.querySelector('[name='+name+']').innerHTML=values.map(v=>`<option>${esc(v)}</option>`).join('')}
 function localDate(d){const z=n=>String(n).padStart(2,'0');return `${d.getFullYear()}-${z(d.getMonth()+1)}-${z(d.getDate())}T${z(d.getHours())}:${z(d.getMinutes())}`}
-function load(){google.script.run.withSuccessHandler(data=>{state=data;document.getElementById('mode').textContent=data.dryRun?'DRY RUN（実投稿なし）':'LIVE';renderHealth();render()}).withFailureHandler(fail).getDashboardData()}
-function renderHealth(){const h=state.health;const parts=[[h.queueTrigger&&h.editTrigger,'自動処理 '+(h.queueTrigger&&h.editTrigger?'OK':'要設定')],[h.approverRestricted,'承認者 '+(h.approverRestricted?'制限済み':'未制限')],[state.dryRun||h.configuredConnections===h.totalConnections,'API設定 '+h.configuredConnections+'/'+h.totalConnections]];document.getElementById('health').innerHTML=parts.map(p=>`<span class="${p[0]?'':'warn'}">${esc(p[1])}</span>`).join('')}
-function render(){['today','pending','tomorrow','materials'].forEach(k=>document.getElementById(k+'Count').textContent=(state[k]||[]).length);document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.view===view));const list=document.getElementById('list');const items=state[view]||[];list.innerHTML=items.length?items.map(view==='materials'?materialCard:postCard).join(''):'<div class="empty">該当する項目はありません</div>';document.getElementById('errors').innerHTML=(state.recentErrors||[]).length?'<b>最近のエラー</b><br>'+state.recentErrors.map(e=>`${esc(e.at)} ${esc(e.channel)}: ${esc(e.message)}`).join('<br>'):''}
-function postCard(p){const actions=p.status==='承認待ち'?`<div class="actions"><button onclick="approve('${p.id}')">承認</button><button class="reject" onclick="rejectPost('${p.id}')">差戻し</button></div>`:'';return `<article class="post"><div class="meta"><b>${esc(p.scheduledAt.replace('T',' ').slice(0,16))}</b><br>${esc(p.brand)}<br><span class="pill">${esc(p.channel)}</span><span class="pill">${esc(p.approval)}</span><span class="pill">${esc(p.status)}</span></div><div class="body">${esc(p.body)}</div>${actions}</article>`}
+function renderHealth(){const h=state.health||{};const parts=[[h.queueTrigger&&h.editTrigger,'自動処理 '+(h.queueTrigger&&h.editTrigger?'OK':'要設定')],[h.approverRestricted,'承認者 '+(h.approverRestricted?'制限済み':'未制限')],[state.dryRun||h.configuredConnections===h.totalConnections,'API設定 '+(h.configuredConnections||0)+'/'+(h.totalConnections||0)]];document.getElementById('health').innerHTML=parts.map(p=>`<span class="${p[0]?'':'warn'}">${esc(p[1])}</span>`).join('')}
+function render(){['today','pending','tomorrow','materials'].forEach(k=>document.getElementById(k+'Count').textContent=(state[k]||[]).length);document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.view===view));const items=state[view]||[];document.getElementById('list').innerHTML=items.length?items.map(view==='materials'?materialCard:postCard).join(''):'<div class="empty">該当する項目はありません</div>';document.getElementById('errors').innerHTML=(state.recentErrors||[]).length?'<b>最近のエラー</b><br>'+state.recentErrors.map(e=>`${esc(e.at)} ${esc(e.channel)}: ${esc(e.message)}`).join('<br>'):''}
+function postCard(p){const actions=p.status==='承認待ち'&&currentRole==='admin'?`<div class="actions"><button onclick="approve('${js(p.id)}')">承認</button><button class="reject" onclick="rejectPost('${js(p.id)}')">差戻し</button></div>`:'';return `<article class="post"><div class="meta"><b>${esc(String(p.scheduledAt||'').replace('T',' ').slice(0,16))}</b><br>${esc(p.brand)}<br><span class="pill">${esc(p.channel)}</span><span class="pill">${esc(p.approval)}</span><span class="pill">${esc(p.status)}</span></div><div class="body">${esc(p.body)}</div>${actions}</article>`}
 function materialCard(m){return `<article class="post"><div class="meta"><b>${esc(m.due)}</b><br>${esc(m.brand)}<br><span class="pill">${esc(m.status)}</span></div><div><b>${esc(m.type)}</b><div class="body">${esc(m.request)}</div></div><div class="meta">${esc(m.owner)}</div></article>`}
-document.querySelector('nav').addEventListener('click',e=>{const b=e.target.closest('.tab');if(b){view=b.dataset.view;render()}});
-document.getElementById('postForm').addEventListener('submit',e=>{e.preventDefault();const fd=new FormData(e.target);const input=Object.fromEntries(fd);input.channels=fd.getAll('channels');if(!input.channels.length){toast('投稿先を選択してください');return}google.script.run.withSuccessHandler(r=>{toast(`${r.count}件を${r.status}（${r.approvalLevel}）で追加しました`);e.target.body.value='';load()}).withFailureHandler(fail).createPost(input)});
-function approve(id){google.script.run.withSuccessHandler(()=>{toast('承認しました');load()}).withFailureHandler(fail).approvePost(id)}
-function rejectPost(id){const reason=prompt('差戻し理由');if(reason===null)return;google.script.run.withSuccessHandler(()=>{toast('差戻しました');load()}).withFailureHandler(fail).rejectPost(id,reason)}
-function toast(s){const t=document.getElementById('toast');t.textContent=s;t.style.display='block';setTimeout(()=>t.style.display='none',2500)}function fail(e){toast(e.message||String(e))}function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function setBusy(button,busy,label){loading=busy;button.disabled=busy;button.textContent=label}
+function authMessage(e){const code=e&&e.code||'';if(code.includes('invalid-credential')||code.includes('wrong-password')||code.includes('user-not-found'))return 'メールアドレスまたはパスワードを確認してください。';if(code.includes('too-many-requests'))return '試行回数が多いため一時停止されています。少し時間を置いてください。';if(code.includes('network-request-failed'))return '通信できませんでした。接続を確認して再試行してください。';return e&&e.message?e.message:'ログインできませんでした。'}
+function toast(s){const t=document.getElementById('toast');t.textContent=s;t.style.display='block';clearTimeout(t._timer);t._timer=setTimeout(()=>t.style.display='none',4000)}
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function js(s){return String(s??'').replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/[\r\n]/g,'')}
 </script>

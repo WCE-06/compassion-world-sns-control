@@ -1,8 +1,15 @@
 function doGet(e) {
   if (e && e.parameter && (e.parameter.code || e.parameter.error) && e.parameter.state) return handleThreadsOAuthCallback_(e.parameter);
+  if (e && e.parameter && e.parameter.mobile === '1') return renderMobileControl_();
   if (e && e.parameter && e.parameter.apiResult === '1') return handleWebApiResult_(e.parameter);
   return ContentService.createTextOutput('COMPASSION WORLD SNS CONTROL: https://wce-06.github.io/compassion-world-sns-control/')
     .setMimeType(ContentService.MimeType.TEXT);
+}
+
+function renderMobileControl_() {
+  return HtmlService.createTemplateFromFile('Index').evaluate()
+    .setTitle('COMPASSION WORLD SNS CONTROL')
+    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
 
 // Editor-visible entry point for the full DRY RUN verification.
