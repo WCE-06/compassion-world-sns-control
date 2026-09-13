@@ -5,6 +5,11 @@ function doGet(e) {
     .setMimeType(ContentService.MimeType.TEXT);
 }
 
+// Editor-visible entry point for the full DRY RUN verification.
+function runFullSystemDryRunTest() {
+  return runEndToEndDryRunTest();
+}
+
 function doPost(e) {
   if (e && e.postData && e.postData.contents && String(e.postData.type || '').indexOf('application/json') === 0) {
     return handleInboundApi_(e.postData.contents);

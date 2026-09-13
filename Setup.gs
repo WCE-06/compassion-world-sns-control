@@ -90,6 +90,34 @@ function runInstagramDryRunTest() {
   return {ok:true, postId:row['投稿ID'], status:result['ステータス']};
 }
 
+function runEndToEndDryRunTest() {
+  if (!isDryRun_()) throw new Error('安全のためDRY_RUN=trueのときだけ実行できます。');
+  const basic = runSelfTest();
+  if (!basic.ok) throw new Error('セルフテスト失敗: ' + basic.errors.join(' / '));
+
+  const id = 'e2e-' + uuid_() + '-threads';
+  const actorEmail = (getProperty_('BOOTSTRAP_ADMIN_EMAIL', false) || notificationEmail_()).toLowerCase();
+  appendObject_(APP.SHEETS.POSTS, {
+    '投稿ID':id, 'ブランド':'COMPASSION WORLD', '投稿種別':'通常',
+    '投稿本文':'【DRY RUN E2Eテスト】承認・予約処理・履歴記録の確認です。実際には投稿されません。',
+    '画像URL':'', '投稿先':'Threads', '予約日時':new Date(now_().getTime() - 60000),
+    '承認レベル':APP.APPROVAL.AUTO, 'ステータス':APP.STATUS.PENDING,
+    '作成者':'system-e2e-test', '作成日時':now_(), '更新日時':now_(), '試行回数':0
+  });
+  sendApprovalRequestForIds_([id], false);
+  approvePost(id, {email:actorEmail, uid:'dry-run-e2e-test', role:'admin'});
+  processQueue();
+
+  const post = findPost_(id);
+  const history = readObjects_(APP.SHEETS.HISTORY).find(row => row['投稿ID'] === id);
+  const errors = [];
+  if (!post || post['ステータス'] !== APP.STATUS.POSTED) errors.push('投稿ステータスが投稿済みになりませんでした。');
+  if (!history || history['結果'] !== 'DRY_RUN') errors.push('DRY RUN履歴が記録されませんでした。');
+  if (errors.length) throw new Error(errors.join(' / '));
+  console.log(JSON.stringify({ok:true, postId:id, status:post['ステータス'], history:history['結果'], email:'sent'}));
+  return {ok:true, postId:id, status:post['ステータス'], history:history['結果'], email:'sent'};
+}
+
 function publishApprovedInstagramAwarenessPost() {
   const props = PropertiesService.getScriptProperties();
   const existingId = props.getProperty('CW_AWARENESS_INSTAGRAM_MEDIA_ID');
