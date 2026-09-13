@@ -12,7 +12,7 @@ function authorizeMailService() {
 function approvalControlUrl_() {
   const configured = getProperty_('SNS_CONTROL_URL', false) || 'https://wce-06.github.io/compassion-world-sns-control/';
   const base = configured.split('#')[0].split('?')[0];
-  return base + '?v=login-20260913';
+  return base + '?v=mobile-api-20260913';
 }
 
 function sendApprovalRequestForIds_(postIds, reminder) {
