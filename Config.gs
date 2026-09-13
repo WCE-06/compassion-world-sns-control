@@ -28,7 +28,7 @@ const WEB_ACTION_ROLES = Object.freeze({
   listEmployees:'admin', createEmployee:'admin', setEmployeeActive:'admin', setEmployeeRole:'admin'
 });
 const WEB_ROLE_LEVELS = Object.freeze({viewer:1, editor:2, admin:3});
-const INBOUND_API_KEY_SHA256 = '3e9a2c2d05a798aaf153879675247e60fba3dc911fb239857db27aef5c572636';
+const INBOUND_API_KEY_SHA256 = '613ce17fc5f1d5436887b9f748e1c9ce97ae7bd4631cfd296db5f670a612fc77';
 
 // 今回作成した実運用シート。別環境へ移す場合は空文字にしてSPREADSHEET_IDを設定します。
 const DEFAULT_SPREADSHEET_ID = '1N_SOVw-CxN309pvaE0v080_sMy1U8wv8jO5PAqpAPv8';
