@@ -12,6 +12,10 @@ function renderMobileControl_() {
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
 
+function include_(filename) {
+  return HtmlService.createHtmlOutputFromFile(filename).getContent();
+}
+
 // Editor-visible entry point for the full DRY RUN verification.
 function runFullSystemDryRunTest() {
   return runEndToEndDryRunTest();
