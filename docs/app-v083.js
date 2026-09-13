@@ -40,6 +40,7 @@ function showLogin(){$('#login').hidden=false;$('#app').hidden=true;$('#mode').t
 
 $('#loginForm').addEventListener('submit',async e=>{e.preventDefault();if(!configured)return;const fd=new FormData(e.target);setLoginBusy(true);$('#firebaseNotice').hidden=true;try{await signInWithEmailAndPassword(auth,String(fd.get('email')).trim(),String(fd.get('password')));setLoginBusy(true,'管理画面を読み込み中…')}catch(err){setLoginBusy(false);const code=String(err&&err.code||'');const message=code.includes('invalid-credential')||code.includes('wrong-password')||code.includes('user-not-found')?'メールアドレスまたはパスワードを確認してください。':code.includes('network-request-failed')?'通信できませんでした。SafariまたはChromeで開き直してください。':'ログイン処理に失敗しました。もう一度お試しください。';fail(new Error(message))}});
 $('#resetPassword').onclick=async()=>{if(!configured)return;const email=$('#loginForm [name=email]').value.trim();if(!email)return toast('先にメールアドレスを入力してください');try{await sendPasswordResetEmail(auth,email);toast('パスワード再設定メールを送信しました')}catch(_){toast('入力内容を確認してください')}};
+$('#showPassword').onchange=e=>{$('#loginPassword').type=e.target.checked?'text':'password'};
 $('#logout').onclick=()=>signOut(auth);
 
 async function api(action,payload={}){
